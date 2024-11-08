@@ -85,3 +85,12 @@ void config_i2c(void)
     // Enable I2C to start communication
     i2c_peripheral_enable(I2C1);
 }
+
+void adc_setup(void) {
+      /* Configure ADC */
+    adc_power_off(ADC1);                     // Power off the ADC for configuration
+    adc_disable_scan_mode(ADC1);             // Single conversion mode (one channel at a time)
+    adc_set_single_conversion_mode(ADC1);    // Single conversion per channel
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_55DOT5CYC); // Sampling time
+    adc_power_on(ADC1);                      // Power on the ADC
+}

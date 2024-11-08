@@ -8,6 +8,7 @@
 #include <libopencm3/stm32/rcc.h> /**< Include the RCC peripheral library */
 #include <libopencm3/stm32/exti.h> /**< Include the EXTI peripheral library */
 #include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
+#include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 
 #define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
 #define ALARM_PIN GPIO5 /**< Define the alarm pin as PA5 */
@@ -39,6 +40,18 @@
 #define INFRARED_SENSOR_PORT GPIOA /**< Infrared sensor port corresponds to port A */
 #define INFRARED_SENSOR_PIN GPIO3 /**< Define the infrared sensor pin as PA3 */
 
+#define PRESCALER_VALUE 71999 /**< Define the prescaler value for the timer */
+/* Calculate it as follows: (timer_clock / desired_frequency) - 1
+ * 78MHz / (10000) - 1 */
+#define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
+
+static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
+
+/**
+ * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
+ */
+void system_clock_setup(void);
+
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
  * 
@@ -61,5 +74,13 @@ void configure_gpio(void);
  * Note: The EXTI9_5 manages EXTI5 to EXTI9 interrupts.
  */
 void exti_setup(void);
+
+/**
+ * @brief Configures the timer to generate a PWM signal
+ * 
+ * The timer is configured to generate a PWM signal with a period of 10 ms and a duty cycle of 0%.
+ * 
+ */
+void config_pwm(void);
 
 

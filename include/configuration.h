@@ -19,6 +19,16 @@
 #define I2C1_CCR_100KHZ 180
 
 /**
+ * @brief I2C CR2 frequency setting for 36 MHz system clock.
+ * 
+ * This define sets the frequency for the I2C peripheral in the CR2 register 
+ * when the system clock is 36 MHz. The value corresponds to the system clock 
+ * frequency used to set the I2C communication speed. 
+ * Adjust the value according to the actual system clock frequency.
+ */
+#define I2C_CR2_FREQ_36MHZ  36
+
+/**
  * @brief Configures the I2C1 peripheral on the STM32.
  *
  * This function sets up the I2C1 peripheral on the STM32 microcontroller to operate

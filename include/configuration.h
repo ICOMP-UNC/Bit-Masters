@@ -118,3 +118,4 @@ void config_i2c(void);
  * indicating battery levels.
  */
 void adc_setup(void);
+

@@ -100,5 +100,3 @@ void adc_setup(void) {
     adc_calibrate(ADC1);
     
 }
-
-

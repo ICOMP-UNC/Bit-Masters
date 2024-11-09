@@ -69,6 +69,9 @@
  */
 #define I2C_CR2_FREQ_36MHZ  36
 
+
+#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
+
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
  * 

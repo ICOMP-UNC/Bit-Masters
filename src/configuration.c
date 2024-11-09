@@ -5,6 +5,12 @@
 
 #include "configuration.h" /**< Include the configuration header file */
 
+void system_clock_setup(void)
+{
+    /* Configure the system clock to 72 MHz using PLL and 8 MHz HSE */
+    rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
+}
+
 void configure_gpio(void) {
     /* Configure the alarm pin as output */
     gpio_set_mode(ALARM_PORT, GPIO_MODE_OUTPUT_2_MHZ,
@@ -86,6 +92,51 @@ void config_i2c(void)
     i2c_peripheral_enable(I2C1);
 }
 
+void config_pwm(void) 
+{
+    /* Enable the peripheral clock of GPIOA */
+    rcc_periph_clock_enable(RCC_TIM1);
+
+    /* Configure the reset and enable the timer peripheral */
+    rcc_periph_reset_pulse(RST_TIM1);
+
+    /* Configure the temporizer to obtain a frequency of 20 kHz */
+    timer_set_prescaler(TIM1, PRESCALER_VALUE); 
+
+    /* Configure the temporizer to count up to 999 */
+    timer_set_period(TIM1, TIMER_PERIOD);
+
+    /* Enable the output channel 2 as PWM */
+    timer_set_oc_mode(TIM1, TIM_OC2, TIM_OCM_PWM1);
+
+    /* Set the duty cicle at 0% */
+    timer_set_oc_value(TIM1, TIM_OC2, duty_cycle); 
+
+    /* Set the output polarity for OC2 as high */
+    timer_set_oc_polarity_high(TIM1, TIM_OC2);
+
+    /* Enable the output for OC2 */
+    timer_enable_oc_output(TIM1, TIM_OC2);
+
+    /* Enable the output channel 3 as PWM */
+    timer_set_oc_mode(TIM1, TIM_OC3, TIM_OCM_PWM1);
+
+    /* Set the duty cicle at 0% */
+    timer_set_oc_value(TIM1, TIM_OC3, duty_cycle); 
+
+    /* Set the output polarity for OC3 as high */
+    timer_set_oc_polarity_high(TIM1, TIM_OC3);
+
+    /* Enable the output for OC3 */
+    timer_enable_oc_output(TIM1, TIM_OC3);
+
+    /* Enable the break function */
+    timer_enable_break_main_output(TIM1);
+
+    /* Enable the temporizer */
+    timer_enable_counter(TIM1);
+}
+  
 void adc_setup(void) {
       /* Configure ADC */
     adc_power_off(ADC1);                     // Power off the ADC for configuration

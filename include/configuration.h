@@ -9,6 +9,7 @@
 #include <libopencm3/stm32/rcc.h> /**< Include the RCC peripheral library */
 #include <libopencm3/stm32/exti.h> /**< Include the EXTI peripheral library */
 #include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
+#include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 #include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
 
 #define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
@@ -69,9 +70,22 @@
  */
 #define I2C_CR2_FREQ_36MHZ  36
 
+#define PRESCALER_VALUE 71999 /**< Define the prescaler value for the timer */
+/* Calculate it as follows: (timer_clock / desired_frequency) - 1
+ * 78MHz / (10000) - 1 */
+#define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
+
+static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
+
+/**
+ * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
+ */
+void system_clock_setup(void);
+=======
 
 #define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
-
+  
+  
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
  * 
@@ -95,8 +109,7 @@ void configure_gpio(void);
  */
 void exti_setup(void);
 
-/**
- * @brief Configures the I2C1 peripheral on the STM32.
+ /** @brief Configures the I2C1 peripheral on the STM32.
  *
  * This function sets up the I2C1 peripheral on the STM32 microcontroller to operate
  * in standard mode (100 kHz) with GPIO pins configured for open-drain alternate function.
@@ -112,7 +125,14 @@ void exti_setup(void);
 void config_i2c(void);
 
 /**
- * @brief Set up the ADC with the required configuration./**
+ * @brief Configures the timer to generate a PWM signal
+ * 
+ * The timer is configured to generate a PWM signal with a period of 10 ms and a duty cycle of 0%.
+ * 
+ */
+void config_pwm(void);
+
+/** @brief Set up the ADC with the required configuration./**
  *
  * The ADC is used to convert analog signals from various sensors (temperature, 
  * battery level, motion, and infrared sensor) into digital values that can be 

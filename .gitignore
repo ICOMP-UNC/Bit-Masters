@@ -54,3 +54,5 @@ dkms.conf
 # vs code
 .vscode/
 
+# Build directory
+*.pio/

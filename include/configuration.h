@@ -69,6 +69,9 @@
  */
 #define I2C_CR2_FREQ_36MHZ  36
 
+
+#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
+
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
  * 
@@ -107,3 +110,15 @@ void exti_setup(void);
  * Before enabling the I2C peripheral, it is disabled to ensure a clean configuration.
  */
 void config_i2c(void);
+
+/**
+ * @brief Set up the ADC with the required configuration./**
+ *
+ * The ADC is used to convert analog signals from various sensors (temperature, 
+ * battery level, motion, and infrared sensor) into digital values that can be 
+ * processed by the microcontroller. This allows the system to monitor sensor 
+ * readings and make decisions such as closing the door, activating alarms, or 
+ * indicating battery levels.
+ */
+void adc_setup(void);
+

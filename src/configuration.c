@@ -90,7 +90,15 @@ void adc_setup(void) {
       /* Configure ADC */
     adc_power_off(ADC1);                     // Power off the ADC for configuration
     adc_disable_scan_mode(ADC1);             // Single conversion mode (one channel at a time)
+    adc_disable_external_trigger_regular(ADC1);
     adc_set_single_conversion_mode(ADC1);    // Single conversion per channel
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_55DOT5CYC); // Sampling time
+    adc_set_sample_time(ADC1, ADC_CHANNEL_TEMP_SENSOR, ADC_SMPR_SMP_55DOT5CYC); /*  // Sampling time
+
+    /* Calibrate ADC */
     adc_power_on(ADC1);                      // Power on the ADC
+    adc_reset_calibration(ADC1);
+    adc_calibrate(ADC1);
+    
 }
+
+

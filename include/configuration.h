@@ -75,6 +75,40 @@
  * 78MHz / (10000) - 1 */
 #define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
 
+/**
+ * @brief Defines the boolean value TRUE as 1.
+ * 
+ * This macro is used to represent a boolean value of "true". It can be used in 
+ * logical conditions where a true value is needed. In this case, TRUE is defined 
+ * as 1 to follow the common convention of representing true with a non-zero value.
+ * 
+ * Example usage:
+ * @code
+ * if (condition == TRUE) {
+ *     // Do something
+ * }
+ * @endcode
+ */
+#define TRUE    1
+
+/**
+ * @brief Defines the value SUCCESS as 1.
+ * 
+ * This macro is used to represent a successful operation or return value. It is 
+ * commonly used to indicate that a function or operation completed successfully.
+ * In this case, SUCCESS is defined as 1 to standardize return values indicating success.
+ * 
+ * Example usage:
+ * @code
+ * int function()
+ * {    
+ *      // If everything worked fine
+ *      return SUCCESS;
+ * }
+ * @endcode
+ */
+#define SUCCESS 1
+
 static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
 
 /**

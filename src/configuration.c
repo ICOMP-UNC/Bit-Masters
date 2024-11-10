@@ -62,10 +62,25 @@ void exti_setup(void)
     /* Enable EXT8 interrupt in the NVIC */
     nvic_enable_irq(NVIC_EXTI9_5_IRQ);
 
+    nvic_enable_irq(NVIC_EXTI15_10_IRQ);
+
     /* Configure EXTI0 (PA8) for falling edge initially */
     exti_select_source(EXTI8, OVERRIDE_SWITCH_PIN); /* Set PA8 as the EXTI8 source */
-    exti_set_trigger(EXTI8, EXTI_TRIGGER_FALLING);  /* Trigger interrupt on falling edge */
+    exti_set_trigger(EXTI8, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on rising edge */
     exti_enable_request(EXTI8);                     /* Enable EXTI8 interrupt */
+
+    exti_select_source(EXTI9, MANUAL_SWITCH_PIN); /* Set PA9 as the EXTI9 source */
+    exti_set_trigger(EXTI9, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
+    exti_enable_request(EXTI9);                     /* Enable EXTI9 interrupt */
+
+    exti_select_source(EXTI10, MOTION_SENSOR_PIN); /* Set PA10 as the EXTI10 source */
+    exti_set_trigger(EXTI10, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
+    exti_enable_request(EXTI10);                     /* Enable EXTI10 interrupt */
+
+    exti_select_source(EXTI11, INFRARED_SENSOR_PIN); /* Set PA11 as the EXTI11 source */
+    exti_set_trigger(EXTI11, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
+    exti_enable_request(EXTI11);                     /* Enable EXTI11 interrupt */
+
 }
 
 void config_i2c(void)

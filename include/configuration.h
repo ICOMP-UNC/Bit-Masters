@@ -12,6 +12,11 @@
 #include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 #include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
 
+// Free RTOS headers
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+
 #define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
 #define ALARM_PIN GPIO5 /**< Define the alarm pin as PA5 */
 
@@ -109,7 +114,35 @@
  */
 #define SUCCESS 1
 
-static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
+#define HEALTHY_TEMPERATURE            24  /**< Healthy ambient temperature */
+#define TEMPERATURE_THRESHOLD_LOW      27  /**< Temperature threshold to start fan at low speed. */
+#define TEMPERATURE_THRESHOLD_MEDIUM   30  /**< Temperature threshold to set fan at medium speed. */
+#define TEMPERATURE_THRESHOLD_HIGH     35  /**< Temperature threshold to set fan at high speed. */
+
+#define DUTY_CYCLE_OFF                 0   /**< Duty cycle when fan is off (below low temperature threshold). */
+#define DUTY_CYCLE_LOW                 30  /**< Duty cycle for low fan speed. */
+#define DUTY_CYCLE_MEDIUM              60  /**< Duty cycle for medium fan speed. */
+#define DUTY_CYCLE_HIGH                90  /**< Duty cycle for high fan speed. */
+
+#define BATTERY_LEVEL_THRESHOLD_MEDIUM 50 /**< Battety level medium at 50% of charge */
+#define BATTERY_LEVEL_THRESHOLD_HIGH   80 /**< Battery level high at 80% of charge */
+
+#define ONE_MINUTE_DELAY               60000 /**< 60000 ms */
+#define DOOR_CLOSING_AND_OPENING_TIME  5000  /**< 5000 ms = 5 seconds */
+
+/* Task priorities */
+#define TEMPERATURE_CONTROL_PRIORITY        tskIDLE_PRIORITY + 1
+#define BATTERY_LEVEL_INDICATOR_PRIORITY    tskIDLE_PRIORITY + 1
+#define CLOSE_DOOR_PRIORITY                 tskIDLE_PRIORITY + 2
+#define OPEN_DOOR_PRIORITY                  tskIDLE_PRIORITY + 2
+
+/* Task names */
+#define TEMPERATURE_CONTROL_TASK_NAME       "temperature_control"
+#define BATTERY_LEVEL_INDICATOR_TASK_NAME   "battery_level_indicator"
+#define CLOSE_DOOR_TASK_NAME                "close_door"
+#define OPEN_DOOR_TASK_NAME                 "open_door"
+
+static uint32_t duty_cycle = DUTY_CYCLE_OFF; /**< Initialize the duty cycle to 0 */
 
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
@@ -174,4 +207,3 @@ void config_pwm(void);
  * indicating battery levels.
  */
 void adc_setup(void);
-

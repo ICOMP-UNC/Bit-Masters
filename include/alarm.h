@@ -10,4 +10,4 @@
 
 #define CONVERT_VALUE (100/4095) /**< The maximum value of the ADC */
 
-uint16_t get_channel_value(uint8_t channel);
+uint16_t get_battery_value(void);

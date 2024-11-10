@@ -78,16 +78,20 @@ void temperature_control_task(void *pvParameters)
 }
 
 /**
- * @brief Task to indicate battery level based on PWM duty cycle.
+ * @brief Task to indicate battery level.
  * 
- * This task periodically checks the battery level and adjusts the PWM duty cycle to indicate 
- * the battery status visually. The task uses predefined thresholds to set the duty cycle 
- * as low, medium, or high, or keeps it off if the battery level is critically low.
+ * This task periodically checks the battery level and adjusts the PWM duty cycle to control 
+ * the brightness of a LED, visually indicating the battery status. The task uses predefined 
+ * thresholds to set the duty cycle as low, medium, or high, or keeps it off if the battery level 
+ * is critically low.
  * 
- * - If the battery level is below BATTERY_LEVEL_THRESHOLD_MEDIUM, the duty cycle is set to low.
- * - If the battery level is between BATTERY_LEVEL_THRESHOLD_MEDIUM and BATTERY_LEVEL_THRESHOLD_HIGH, 
- *   the duty cycle is set to medium.
- * - If the battery level is above or equal to BATTERY_LEVEL_THRESHOLD_HIGH, the duty cycle is set to high.
+ * The LED brightness reflects the battery status as follows:
+ * - If the battery level is below `BATTERY_LEVEL_THRESHOLD_MEDIUM`, the duty cycle is set to low, 
+ *   causing the LED to dimly indicate a low battery status.
+ * - If the battery level is between `BATTERY_LEVEL_THRESHOLD_MEDIUM` and `BATTERY_LEVEL_THRESHOLD_HIGH`, 
+ *   the duty cycle is set to medium, and the LED brightness indicates a moderate battery level.
+ * - If the battery level is above or equal to `BATTERY_LEVEL_THRESHOLD_HIGH`, the duty cycle is set to 
+ *   high, making the LED shine at maximum brightness to show a high battery level.
  * 
  * The task then waits for one minute before checking the battery level again.
  * 
@@ -95,6 +99,7 @@ void temperature_control_task(void *pvParameters)
  * 
  * @note This task should be managed by the FreeRTOS scheduler.
  */
+
 void battery_level_indicator_task(void *pvParameters)
 {
     uint8_t percentage_duty_cycle = DUTY_CYCLE_OFF;

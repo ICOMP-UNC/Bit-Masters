@@ -10,4 +10,9 @@
 
 #define CONVERT_VALUE (100/4095) /**< The maximum value of the ADC */
 
+/**
+ * @brief Get the battery value and convert it to a percentage
+ * 
+ * @return uint16_t 
+ */
 uint16_t get_battery_value(void);

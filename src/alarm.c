@@ -19,7 +19,7 @@ uint8_t convert_to_display(uint8_t value) {
 uint8_t obtain_unit_value(void) {
     uint16_t temperature = read_temperature(); /* Read the temperature */
 
-    if (temperature > 100) {
+    if (temperature > 99) {
         return 0x31 /* Display "r" for error */;
     }
 
@@ -30,7 +30,7 @@ uint8_t obtain_unit_value(void) {
 uint8_t obtain_tens_value(void) {
     uint16_t temperature = read_temperature();
 
-    if (temperature > 100) { /* Check if the temperature is greater than 100 */
+    if (temperature > 99) { /* Check if the temperature is greater than 99 */
         return 0x79; /* Display "E" for error */
     }
 
@@ -69,3 +69,4 @@ void show_display(void){
     update_i2c_value(I2C1_BASE, unit, DISPLAY_UNIT_ADDRESS); /* Update the I2C value */
     update_i2c_value(I2C2_BASE, tens, DISPLAY_TENS_ADDRESS); /* Update the I2C value */
 }
+

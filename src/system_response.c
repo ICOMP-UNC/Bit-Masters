@@ -8,16 +8,16 @@ uint16_t process_temperature(uint16_t value)
 }
 
 uint16_t read_temperature(void) {
-    // Configurar el canal especificado
-    adc_set_regular_sequence(ADC1, 1, ADC_CHANNEL_TEMP_SENSOR); // Secuencia con un solo canal
+    // Configure temperature channel
+    adc_set_regular_sequence(ADC1, 1, ADC_CHANNEL_TEMP_SENSOR); // Sequence with one channel
 
-    // Iniciar la conversión
+    // Start the conversion
     adc_start_conversion_regular(ADC1);
 
-    // Esperar a que la conversión termine
+    // Wait for the conversion to finish
     while (!(ADC1_SR & ADC_SR_EOC));
 
-    // Leer y devolver el resultado de la conversión
+    // Read and return the result of the conversion
     return adc_read_regular(ADC1);
 }
 

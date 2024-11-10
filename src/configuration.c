@@ -16,9 +16,13 @@ void configure_gpio(void) {
     gpio_set_mode(ALARM_PORT, GPIO_MODE_OUTPUT_2_MHZ,
                   GPIO_CNF_OUTPUT_PUSHPULL, ALARM_PIN);
     
-    /* Configure the motor pin as output */
-    gpio_set_mode(MOTOR_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_PIN);
+    /* Configure the positive motor pin as output */
+    gpio_set_mode(MOTOR_POS_PORT, GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_POS_PIN);
+
+    /* Configure the negative motor pin as output */
+    gpio_set_mode(MOTOR_NEG_PORT, GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_NEG_PIN);
 
     /* Configure the manual switch pin as input */
     gpio_set_mode(MANUAL_SWITCH_PORT, GPIO_MODE_INPUT,
@@ -143,8 +147,7 @@ void adc_setup(void) {
     adc_disable_scan_mode(ADC1);             // Single conversion mode (one channel at a time)
     adc_disable_external_trigger_regular(ADC1);
     adc_set_single_conversion_mode(ADC1);    // Single conversion per channel
-    adc_set_sample_time(ADC1, ADC_CHANNEL_TEMP_SENSOR, ADC_SMPR_SMP_55DOT5CYC); /*  // Sampling time
-
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_55DOT5CYC); /*  Sampling time */
     /* Calibrate ADC */
     adc_power_on(ADC1);                      // Power on the ADC
     adc_reset_calibration(ADC1);

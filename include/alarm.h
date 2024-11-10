@@ -46,3 +46,4 @@ void update_i2c_value(uint32_t i2c, uint8_t data, uint8_t address);
  * @brief Show the display
  */
 void show_display(void);
+

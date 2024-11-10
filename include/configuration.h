@@ -81,7 +81,6 @@ static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */
 void system_clock_setup(void);
-=======
 
 #define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
   

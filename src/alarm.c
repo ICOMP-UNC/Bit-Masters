@@ -50,23 +50,22 @@ void display_temperature(uint8_t value, uint8_t address, uint32_t i2c) {
 
 }
 
-void update_i2c_value(void) {
+void update_i2c_value(uint32_t i2c, uint8_t data, uint8_t address) {
 
-    uint8_t tens = obtain_tens_value(); /* Obtain the tens value */
+    while (!(i2c_get_data(ic2) & (1 << 1)));        /* Wait for the data to be sent */
+    i2c_send_stop(ic2);                             /* Send the stop condition */
+
+    i2c_peripheral_disable(ic2);        /* Disable the I2C peripheral */
+
+    display_temperature(data, address, i2c); /* Display the temperature value */
+
+}
+
+void show_display(void){
+    
     uint8_t unit = obtain_unit_value(); /* Obtain the unit value */
+    uint8_t tens = obtain_tens_value(); /* Obtain the tens value */
 
-    while (!(i2c_get_data(I2C1_BASE) & (1 << 1)));        /* Wait for the data to be sent */
-    i2c_send_stop(I2C1_BASE);                             /* Send the stop condition */
-
-    i2c_peripheral_disable(I2C1_BASE);        /* Disable the I2C peripheral */
-
-    display_temperature(tens, DISPLAY_UNIT_ADDRESS, I2C1_BASE);
-
-    while (!(i2c_get_data(I2C2_BASE) & (1 << 1)));        /* Wait for the data to be sent */
-    i2c_send_stop(I2C2_BASE);                             /* Send the stop condition */
-
-    i2c_peripheral_disable(I2C2_BASE);        /* Disable the I2C peripheral */
-
-    display_temperature(unit, DISPLAY_TENS_ADDRESS, I2C2_BASE); /* Send the data */
-
+    update_i2c_value(I2C1_BASE, unit, DISPLAY_UNIT_ADDRESS); /* Update the I2C value */
+    update_i2c_value(I2C2_BASE, tens, DISPLAY_TENS_ADDRESS); /* Update the I2C value */
 }

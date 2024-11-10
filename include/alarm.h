@@ -36,5 +36,13 @@ void display_temperature(uint8_t value, uint8_t address, uint32_t i2c);
 
 /**
  * @brief Update the I2C value
+ * @param i2c The I2C peripheral
+ * @param data The data to update
+ * @param address The address of the device
  */
-void update_i2c_value(void);
+void update_i2c_value(uint32_t i2c, uint8_t data, uint8_t address);
+
+/**
+ * @brief Show the display
+ */
+void show_display(void);

@@ -1,7 +1,6 @@
 #include "configuration.h" /**< Include the configuration header file */
 
 uint32_t manual_controls = 0; /**< Variable to store the manual control state */
-uint32_t open_door = 0; /**< Variable to store the open door state */
 
 void exti9_5_isr(void){
 
@@ -20,9 +19,9 @@ void exti9_5_isr(void){
     if (exti_get_flag_status(EXTI9)) { /* Check if the interrupt came from the manual switch */
         if(manual_controls) { /* Check if manual_controls is set */
             if(gpio_get(MANUAL_SWITCH_PORT, MANUAL_SWITCH_PIN)) {
-                open_door = 1; /* Set open_door to 1 */
+                xTaskNotifyGive(open_door_taskHandle); /* Notify the open_door_task */
             } else {
-                open_door = 0; /* Set open_door to 0 */
+                xTaskNotifyGive(close_door_taskHandle); /* Notify the close_door_task */
             }
         }
         /* Clear the interrupt flag */
@@ -34,10 +33,10 @@ void exti15_10_isr(void) {
     /* Check if the interrupt came from the motion sensor */
     if (exti_get_flag_status(EXTI10)) {
         if(gpio_get(MOTION_SENSOR_PORT, MOTION_SENSOR_PIN)) {
-            open_door = 0; /* Set open_door to 0 */
+            xTaskNotifyGive(close_door_taskHandle); /* Notify the close_door_task */
         }
         else {
-            open_door = 1; /* Set open_door to 1 */
+            xTaskNotifyGive(open_door_taskHandle); /* Notify the open_door_task */
         }
         /* Clear the interrupt flag */
         exti_reset_request(EXTI10);

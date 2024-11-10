@@ -11,6 +11,7 @@
 #include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
 #include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 #include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
+#include <libopencm3/stm32/adc.h> /**< Include the ADC library */
 
 #define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
 #define ALARM_PIN GPIO5 /**< Define the alarm pin as PA5 */

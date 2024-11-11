@@ -66,11 +66,11 @@ void exti_setup(void)
 
     /* Configure EXTI0 (PA8) for falling edge initially */
     exti_select_source(EXTI8, OVERRIDE_SWITCH_PIN); /* Set PA8 as the EXTI8 source */
-    exti_set_trigger(EXTI8, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on rising edge */
+    exti_set_trigger(EXTI8, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on rising edge and falling edge*/
     exti_enable_request(EXTI8);                     /* Enable EXTI8 interrupt */
 
     exti_select_source(EXTI9, MANUAL_SWITCH_PIN); /* Set PA9 as the EXTI9 source */
-    exti_set_trigger(EXTI9, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
+    exti_set_trigger(EXTI9, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge and rising edge*/
     exti_enable_request(EXTI9);                     /* Enable EXTI9 interrupt */
 
     exti_select_source(EXTI10, MOTION_SENSOR_PIN); /* Set PA10 as the EXTI10 source */

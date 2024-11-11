@@ -11,6 +11,7 @@
 #include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
 #include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 #include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
+#include <libopencm3/stm32/adc.h> /**< Include the ADC library */
 
 // Free RTOS headers
 #include "FreeRTOS.h"

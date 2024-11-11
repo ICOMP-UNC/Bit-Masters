@@ -18,6 +18,25 @@
 #define DISPLAY_UNIT_ADDRESS 0x3F /**< Display unit address */
 #define DISPLAY_TENS_ADDRESS 0x3E /**< Display tens address */
 
+#define DISPLAY_0 0x3F /**< Display "0" */
+#define DISPLAY_1 0x06 /**< Display "1" */
+#define DISPLAY_2 0x5B /**< Display "2" */
+#define DISPLAY_3 0x4F /**< Display "3" */
+#define DISPLAY_4 0x66 /**< Display "4" */
+#define DISPLAY_5 0x6D /**< Display "5" */
+#define DISPLAY_6 0x7D /**< Display "6" */
+#define DISPLAY_7 0x07 /**< Display "7" */
+#define DISPLAY_8 0x7F /**< Display "8" */
+#define DISPLAY_9 0x6F /**< Display "9" */
+
+#define LENGTH 1 /**< Length of the display buffer */
+
+#define MAX_TEMP 99 /**< Maximum temperature value */
+#define DISPLAY_E 0x79 /**< Display "E" for error */
+#define DISPLAY_R 0x31 /**< Display "r" for error */
+
+#define TEN 10 /**< Ten value */
+
 /**
  * @brief Get the battery value and convert it to a percentage
  * 

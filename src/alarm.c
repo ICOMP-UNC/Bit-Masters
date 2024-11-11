@@ -83,3 +83,17 @@ void show_display(void){
     update_i2c_value(I2C1_BASE, unit, DISPLAY_UNIT_ADDRESS); /* Update the I2C value */
     update_i2c_value(I2C2_BASE, tens, DISPLAY_TENS_ADDRESS); /* Update the I2C value */
 }
+
+void activate_alarm(void) {
+    if(gpio_get(ALARM_PORT, ALARM_PIN)) { /**< Check if the alarm is already active */
+        return; /**< Return if the alarm is already active */
+    }
+    gpio_set(ALARM_PORT, ALARM_PIN); /**< Set the alarm pin high */
+}
+
+void deactivate_alarm(void) {
+    if(!gpio_get(ALARM_PORT, ALARM_PIN)) { /**< Check if the alarm is already inactive */
+        return; /**< Return if the alarm is already inactive */
+    }
+    gpio_clear(ALARM_PORT, ALARM_PIN); /**< Set the alarm pin low */
+}

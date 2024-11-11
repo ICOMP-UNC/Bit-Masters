@@ -11,25 +11,28 @@
 #include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
 #include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
 #include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
-#include <libopencm3/stm32/adc.h> /**< Include the ADC library */
+#include <libopencm3/stm32/adc.h> /**< Include the adc peripheral library */
 
 #define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
 #define ALARM_PIN GPIO5 /**< Define the alarm pin as PA5 */
 
-#define MOTOR_PORT GPIOA /**< Motor port corresponds to port A */
-#define MOTOR_PIN GPIO6 /**< Define the motor pin as PA6 */
-
 #define MANUAL_SWITCH_PORT GPIOA /**< Manual switch port corresponds to port A */
-#define MANUAL_SWITCH_PIN GPIO7 /**< Define the manual switch pin as PA7 */
+#define MANUAL_SWITCH_PIN GPIO6 /**< Define the manual switch pin as PA6 */
 
 #define OVERRIDE_SWITCH_PORT GPIOA /**< Override switch port corresponds to port A */
-#define OVERRIDE_SWITCH_PIN GPIO8 /**< Define the override switch pin as PA8 */
+#define OVERRIDE_SWITCH_PIN GPIO7 /**< Define the override switch pin as PA7 */
 
 #define LED_PORT GPIOA /**< LED port corresponds to port A */
-#define LED_PIN GPIO10 /**< Define the LED pin as PA10 */
+#define LED_PIN GPIO8 /**< Define the LED pin as PA10 */
 
 #define FAN_PORT GPIOA /**< Fan port corresponds to port A */
 #define FAN_PIN GPIO9 /**< Define the fan pin as PA9 */
+
+#define MOTOR_POS_PORT GPIOA /**< Positive motor port corresponds to port A */
+#define MOTOR_POS_PIN GPIO10 /**< Define the motor pin as P10 */
+
+#define MOTOR_NEG_PORT GPIOA /**< Negative motor port corresponds to port A */
+#define MOTOR_NEG_PIN GPIO11 /**< Define the motor pin as PA11 */
 
 #define TEMP_SENSOR_PORT GPIOA /**< Temperature sensor port corresponds to port A */
 #define TEMP_SENSOR_PIN GPIO0 /**< Define the temperature sensor pin as PA0 */
@@ -77,6 +80,7 @@
 #define PRESCALER_VALUE 71999 /**< Define the prescaler value for the timer */
 /* Calculate it as follows: (timer_clock / desired_frequency) - 1
  * 78MHz / (10000) - 1 */
+
 #define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
 
 static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
@@ -85,7 +89,6 @@ static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */
 void system_clock_setup(void);
-
   
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
@@ -142,4 +145,3 @@ void config_pwm(void);
  * indicating battery levels.
  */
 void adc_setup(void);
-

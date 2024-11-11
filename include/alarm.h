@@ -8,6 +8,7 @@
 #include <libopencm3/stm32/adc.h> /**< Include the ADC library */
 #include <libopencm3/stm32/i2c.h> /**< For I2C peripheral */
 #include "system_response.h" /**< Include the system response header file */
+#include "configuration.h" /**< Include the configuration header file */
 
 #define CONVERT_VALUE (100/4095) /**< The maximum value of the ADC */
 
@@ -63,3 +64,19 @@ void update_i2c_value(uint32_t i2c, uint8_t data, uint8_t address);
  * @brief Show the display
  */
 void show_display(void);
+
+/**
+ * @brief Activates the alarm
+ * 
+ * This function checks if the alarm is already active and sets the alarm pin high if it is not.
+ * 
+ */
+void activate_alarm(void);
+
+/**
+ * @brief Deactivates the alarm
+ * 
+ * This function checks if the alarm is already inactive and sets the alarm pin low if it is not.
+ * 
+ */
+void deactivate_alarm(void);

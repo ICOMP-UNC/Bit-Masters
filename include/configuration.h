@@ -145,4 +145,3 @@ void config_pwm(void);
  * indicating battery levels.
  */
 void adc_setup(void);
-

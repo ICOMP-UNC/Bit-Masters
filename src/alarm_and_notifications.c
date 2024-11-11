@@ -1,4 +1,4 @@
-#include "alarm.h"
+#include "alarm_and_notifications.h"
 
 uint16_t get_battery_value(void) {
     /* Configure the ADC */

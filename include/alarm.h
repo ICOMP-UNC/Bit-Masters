@@ -1,11 +1,28 @@
+/**
+ * @file alarm.h
+ * @brief alarm header file
+ * 
+ */
+#pragma once
+
+#include <libopencm3/stm32/adc.h> /**< Include the ADC library */
 #include <libopencm3/stm32/i2c.h> /**< For I2C peripheral */
-#include "system_response.h" /**< For read_temperature() */
+#include "system_response.h" /**< Include the system response header file */
+
+#define CONVERT_VALUE (100/4095) /**< The maximum value of the ADC */
 
 #define WRITE 0 /**< Write mode */
 #define READ 1  /**< Read mode */
 
 #define DISPLAY_UNIT_ADDRESS 0x3F /**< Display unit address */
 #define DISPLAY_TENS_ADDRESS 0x3E /**< Display tens address */
+
+/**
+ * @brief Get the battery value and convert it to a percentage
+ * 
+ * @return uint16_t 
+ */
+uint16_t get_battery_value(void);
 
 /**
  * @brief Convert a value to the display format
@@ -46,4 +63,3 @@ void update_i2c_value(uint32_t i2c, uint8_t data, uint8_t address);
  * @brief Show the display
  */
 void show_display(void);
-

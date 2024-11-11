@@ -46,8 +46,9 @@
 #define INFRARED_SENSOR_PORT GPIOA /**< Infrared sensor port corresponds to port A */
 #define INFRARED_SENSOR_PIN GPIO3 /**< Define the infrared sensor pin as PA3 */
 
-#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC channel 0 */
-#define ADC_CHANNEL_BATTERY_LEVEL 1 /**< Timer uses ADC channel 1 */
+#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
+#define ADC_CHANNEL_BATTERY_LEVEL 1 /**< Timer uses ADC chanell 1 */
+
   
 /**
  * @brief I2C1 rise time in standard mode (100 kHz).
@@ -80,11 +81,10 @@
 #define PRESCALER_VALUE 71999 /**< Define the prescaler value for the timer */
 /* Calculate it as follows: (timer_clock / desired_frequency) - 1
  * 78MHz / (10000) - 1 */
-
 #define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
 
 static uint32_t duty_cycle = 0; /**< Initialize the duty cycle to 0 */
-  
+
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */

@@ -7,6 +7,7 @@
 #define TEMP_SCALE_FACTOR   5    /**< Scale factor to convert voltage difference to temperature */
 #define PERCENTAGE_MAX      100  /**< Define the maximum percentage value (100%) */
 #define PWM_CHANNEL_2       2    /**< PWM channel 2 */
+#define PWM_CHANNEL_3       3    /**< PWM channel 3 */
 
 /**
  * @brief Open the door by setting the positive motor pin and clearing the negative motor pin

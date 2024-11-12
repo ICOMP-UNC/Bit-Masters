@@ -56,6 +56,18 @@ void configure_gpio(void) {
     gpio_set_mode(INFRARED_SENSOR_PORT, GPIO_MODE_INPUT,
                   GPIO_CNF_INPUT_FLOAT, INFRARED_SENSOR_PIN);
 
+    // Enable clock for every port
+    rcc_periph_clock_enable(ALARM_PORT);
+    rcc_periph_clock_enable(MOTOR_POS_PORT);
+    rcc_periph_clock_enable(MOTOR_NEG_PORT);
+    rcc_periph_clock_enable(MANUAL_SWITCH_PORT);
+    rcc_periph_clock_enable(OVERRIDE_SWITCH_PORT);
+    rcc_periph_clock_enable(LED_PORT);
+    rcc_periph_clock_enable(FAN_PORT);
+    rcc_periph_clock_enable(TEMP_SENSOR_PORT);
+    rcc_periph_clock_enable(BATTERY_LEVEL_PORT);
+    rcc_periph_clock_enable(MOTION_SENSOR_PORT);
+    rcc_periph_clock_enable(INFRARED_SENSOR_PORT);
 }
 
 void exti_setup(void)
@@ -84,7 +96,6 @@ void exti_setup(void)
     exti_select_source(EXTI11, INFRARED_SENSOR_PIN); /* Set PA11 as the EXTI11 source */
     exti_set_trigger(EXTI11, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
     exti_enable_request(EXTI11);                     /* Enable EXTI11 interrupt */
-
 }
 
 void config_i2c(void)
@@ -187,5 +198,4 @@ void adc_setup(void) {
     adc_power_on(ADC1);                      // Power on the ADC
     adc_reset_calibration(ADC1);
     adc_calibrate(ADC1);
-    
 }

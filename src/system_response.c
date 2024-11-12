@@ -48,9 +48,9 @@ uint16_t read_temperature(void) {
     return adc_read_regular(ADC1);
 }
 
-void set_pwm_duty_cycle(uint8_t duty_cycle, uint8_t output_channel) {
+void set_pwm_duty_cycle(uint8_t duty_cycle_param, uint8_t output_channel) {
     // Calculate the PWM compare value based on the duty cycle
-    uint32_t pwm_value = (TIMER_PERIOD * duty_cycle) / PERCENTAGE_MAX;
+    uint32_t pwm_value = (TIMER_PERIOD * duty_cycle_param) / PERCENTAGE_MAX;
 
     if(output_channel == PWM_CHANNEL_2)
     {

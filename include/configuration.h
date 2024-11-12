@@ -51,8 +51,8 @@
 #define INFRARED_SENSOR_PORT GPIOA /**< Infrared sensor port corresponds to port A */
 #define INFRARED_SENSOR_PIN GPIO3 /**< Define the infrared sensor pin as PA3 */
 
-#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC channel 0 */
-#define ADC_CHANNEL_BATTERY_LEVEL 1 /**< Timer uses ADC channel 1 */
+#define ADC_CHANNEL_TEMP_SENSOR ((uint8_t) 0) /**< Timer uses ADC channel 0 */
+#define ADC_CHANNEL_BATTERY_LEVEL ((uint8_t) 1) /**< Timer uses ADC channel 1 */
   
 /**
  * @brief I2C1 rise time in standard mode (100 kHz).
@@ -87,9 +87,6 @@
  * 78MHz / (10000) - 1 */
 
 #define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
-
-
-#define ADC_CHANNEL_TEMP_SENSOR 0 /**< Timer uses ADC chanell 0 */
   
 /**
  * @brief Defines the boolean value TRUE as 1.
@@ -153,16 +150,13 @@
 #define CLOSE_DOOR_TASK_NAME                "close_door"
 #define OPEN_DOOR_TASK_NAME                 "open_door"
 
-static uint32_t duty_cycle = DUTY_CYCLE_OFF; /**< Initialize the duty cycle to 0 */
-
+static uint32_t duty_cycle = 0; /**< Duty cycle for the PWM signal */
 
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */
 void system_clock_setup(void);
 
-
-  
   
 /**
  * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
@@ -210,7 +204,7 @@ void config_i2c(void);
  */
 void config_pwm(void);
 
-/** @brief Set up the ADC with the required configuration./**
+/** @brief Set up the ADC with the required configuration.
  *
  * The ADC is used to convert analog signals from various sensors (temperature, 
  * battery level, motion, and infrared sensor) into digital values that can be 

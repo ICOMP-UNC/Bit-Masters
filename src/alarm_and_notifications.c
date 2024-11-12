@@ -2,7 +2,7 @@
 
 uint16_t get_battery_value(void) {
     /* Configure the ADC */
-    adc_set_regular_sequence(ADC1, LENGTH, ADC_CHANNEL_BATTERY_LEVEL); /* Select only one channel */
+    adc_set_regular_sequence(ADC1, 1, ADC_CHANNEL_BATTERY_LEVEL); /* Select only one channel */
 
     /* Start the conversion */
     adc_start_conversion_regular(ADC1);

@@ -9,6 +9,11 @@ TaskHandle_t openDoorTaskHandle = NULL;
 
 uint32_t manual_controls = 0; /**< Variable to store the manual control state */
 
+void temperature_control_task(void *pvParameters);
+void battery_level_indicator_task(void *pvParameters);
+void close_door_task(void *pvParameters);
+void open_door_task(void *pvParameters);
+
 // ---------------- Handlers -------------------------
 void exti9_5_isr(void){
 
@@ -57,7 +62,7 @@ void exti15_10_isr(void) {
             activate_alarm(); /* Call the activate_alarm function */
         }
         else {
-            desactivate_alarm(); /* Call the desactivate_alarm function */
+            deactivate_alarm(); /* Call the desactivate_alarm function */
         }
     }
 
@@ -240,6 +245,12 @@ void open_door_task(void *pvParameters)
         stop_motor();
     }
 }
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    // Handle stack overflow here, like logging or resetting
+    for (;;);
+}
+
 
 int main(void)
 {

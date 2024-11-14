@@ -29,8 +29,8 @@
 #define OVERRIDE_SWITCH_PIN   ((uint32_t)(1 << 12)) /**< Assign port 2, pin 13 to the door switch pin */
 // #define I_TEMPERATURE_PIN   ((uint32_t)(1 << 2))  /**< Assign port 0, pin 1 to the temperature sensor pin */
 
-// #define INPUT  0 /**< Macro to define the input */
-// #define OUTPUT 1 /**< Macro to define the output */
+#define INPUT  0 /**< Macro to define the input */
+#define OUTPUT 1 /**< Macro to define the output */
 
 #define TRUE  1 /**< Macro to define the true */
 #define FALSE 0 /**< Macro to define the false */
@@ -69,7 +69,7 @@ void config_ports(void)
     pin_cfg.Portnum = PINSEL_PORT_0;           /**< Assign port 0 to the pin configuration */
     pin_cfg.Pinnum = PINSEL_PIN_22;            /**< Assign pin 22 to the pin configuration */
     pin_cfg.Funcnum = PINSEL_FUNC_0;           /**< Assign function 0 to the pin configuration */
-    pin_cfg.Pinmode = PINSEL_PINMODE_PULLDOWN;   /**< Assign pull-up mode to the pin configuration */
+    pin_cfg.Pinmode = PINSEL_PINMODE_PULLUP;   /**< Assign pull-up mode to the pin configuration */
     pin_cfg.OpenDrain = PINSEL_PINMODE_NORMAL; /**< Assign normal mode to the pin configuration */
 
     PINSEL_ConfigPin(&pin_cfg); /**< Configure the pin */
@@ -106,11 +106,10 @@ void config_ports(void)
 
     PINSEL_ConfigPin(&pin_cfg); /** Configure the pin */
 
-    GPIO_SetDir(PINSEL_PORT_0, (MOTOR_NEG_PIN | MOTOR_POS_PIN), GPIO_DIR_OUTPUT); /* Set the LED and motor pins as output */
+    GPIO_SetDir(PINSEL_PORT_0, (MOTOR_NEG_PIN | MOTOR_POS_PIN), OUTPUT); /* Set the LED and motor pins as output */
     // GPIO_SetDir(PINSEL_PORT_0, I_TEMPERATURE_PIN, INPUT);          /* Set the temperature sensor pin as input */
-    GPIO_SetDir(PINSEL_PORT_2,
-                (/*I_SWITCH_LOW | I_SWITCH_HIGH |*/ MANUAL_SWITCH_PIN | OVERRIDE_SWITCH_PIN),
-                GPIO_DIR_INPUT); /* Set the switch pins as input */
+    GPIO_SetDir(PINSEL_PORT_2, (MANUAL_SWITCH_PIN | OVERRIDE_SWITCH_PIN),
+                INPUT); /* Set the switch pins as input */
 }
 
 /**
@@ -262,12 +261,14 @@ void EINT2_IRQHandler(void)
     {
         // desactivar interrupciones
         // Configurar flanco descendente
-        EXTI_SetPolarity(EXTI_EINT2, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE); 
-    } 
+    	NVIC_EnableIRQ(EINT3_IRQn);
+        EXTI_SetPolarity(EXTI_EINT2, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE);
+    }
     else
     {
         // Activar interrupciones
         // Configurar flanco ascendente
+    	NVIC_DisableIRQ(EINT3_IRQn);
         EXTI_SetPolarity(EXTI_EINT2, EXTI_POLARITY_HIGH_ACTIVE_OR_RISING_EDGE);
     }
 
@@ -289,22 +290,23 @@ void EINT2_IRQHandler(void)
     //     SYSTICK_IntCmd(ENABLE);
     //     /* Enable the controls */
     // }
+
 }
 
 void EINT3_IRQHandler(void)
 {
     EXTI_ClearEXTIFlag(EXTI_EINT3); /* Clear the external interrupt flag */
-    if(LPC_SC->EXTPOLAR & (1 << 2))
+    if(LPC_SC->EXTPOLAR & (1 << 3))
     {
         LPC_GPIO0->FIOSET = MOTOR_POS_PIN; /* Turn on the motor */
         // Configurar flanco descendente
-        EXTI_SetPolarity(EXTI_EINT2, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE); 
-    } 
+        EXTI_SetPolarity(EXTI_EINT3, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE);
+    }
     else
     {
         LPC_GPIO0->FIOCLR = MOTOR_POS_PIN; /* Turn on the motor */
         // Configurar flanco ascendente
-        EXTI_SetPolarity(EXTI_EINT2, EXTI_POLARITY_HIGH_ACTIVE_OR_RISING_EDGE);
+        EXTI_SetPolarity(EXTI_EINT3, EXTI_POLARITY_HIGH_ACTIVE_OR_RISING_EDGE);
     }
 }
 
@@ -399,7 +401,7 @@ int main(void)
 
     NVIC_EnableIRQ(EINT2_IRQn); /* Enable the external interrupt 2 */
 
-    NVIC_EnableIRQ(EINT3_IRQn); /* Enable the external interrupt 2 */
+     /* Enable the external interrupt 2 */
 
     // NVIC_EnableIRQ(TIMER0_IRQn); /* Enable the timer 0 */
 

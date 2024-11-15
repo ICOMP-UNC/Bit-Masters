@@ -45,7 +45,7 @@ void config_ports(void)
 
     GPIO_SetDir(PINSEL_PORT_0, (MOTOR_NEG_PIN | MOTOR_POS_PIN | ALARM_PIN), OUTPUT); /* Set the LED and motor pins as output */
     // GPIO_SetDir(PINSEL_PORT_0, I_TEMPERATURE_PIN, INPUT);          /* Set the temperature sensor pin as input */
-    GPIO_SetDir(PINSEL_PORT_2, (MANUAL_SWITCH_PIN | OVERRIDE_SWITCH_PIN | MOTION_SENSOR_PIN),
+    GPIO_SetDir(PINSEL_PORT_2, (MANUAL_SWITCH_PIN | OVERRIDE_SWITCH_PIN | FIRE_SENSOR_PIN),
                 INPUT); /* Set the switch pins as input */
 }
 

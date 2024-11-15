@@ -95,6 +95,7 @@ void config_timer_and_match(void){
 
     TIM_Init(LPC_TIM0, TIM_TIMER_MODE, &timer_cfg); /** Initialize the timer */
     TIM_Init(LPC_TIM1, TIM_TIMER_MODE, &timer_cfg); /** Initialize the timer */
+    TIM_Init(LPC_TIM2, TIM_TIMER_MODE, &timer_cfg); /** Initialize the timer */
 
 
     TIM_MATCHCFG_Type match_cfg; /**< Define the match configuration structure */
@@ -110,7 +111,23 @@ void config_timer_and_match(void){
     TIM_ConfigMatch(LPC_TIM0, &match_cfg); /** Configure the match */
     TIM_ConfigMatch(LPC_TIM1, &match_cfg); /** Configure the match */
 
+    match_cfg.IntOnMatch = DISABLE;
+    match_cfg.StopOnMatch = DISABLE; /** Disable the stop on match */
+    match_cfg.ExtMatchOutputType = TIM_EXTMATCH_HIGH; /** Assign the external match output type to the match
+                                                             configuration structure */
+    TIM_ConfigMatch(LPC_TIM2, &match_cfg); /** Configure the match */
+
     NVIC_EnableIRQ(TIMER0_IRQn); /** Enable the timer 0 interrupt */
     NVIC_EnableIRQ(TIMER1_IRQn); /** Enable the timer 0 interrupt */
+    NVIC_EnableIRQ(TIMER2_IRQn); /** Enable the timer 0 interrupt */
+}
+
+void config_adc(void)
+{
+    ADC_Init(LPC_ADC, ADC_FREQ); /* Initialize the ADC peripheral with a 100 kHz sampling frequency */
+    ADC_ChannelCmd(LPC_ADC, ADC_CHANNEL_0, ENABLE); /* Enable ADC channel 0 */
+    ADC_IntConfig(LPC_ADC, ADC_CHANNEL_0, ENABLE); /* Enable interrupt for ADC channel 0 */
+
+    // START ON MATCH
 }
 

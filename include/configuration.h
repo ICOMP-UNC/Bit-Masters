@@ -27,6 +27,8 @@
 #define MATCH_CHANNEL_1 1
 #define MATCH_VALUE 5000
 
+#define ADC_FREQ 100000 /* 100 kHz */
+
 
 /**
  * @brief Configures the ports for the temperature sensor, switch, LED and motor
@@ -44,3 +46,6 @@ void config_eint(void);
 
 
 void config_timer_and_match(void);
+
+void config_adc(void);
+

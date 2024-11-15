@@ -76,7 +76,10 @@ void TIMER0_IRQHandler(void)
             LPC_GPIO0->FIOCLR |= MOTOR_POS_PIN; /* Turn off the motor */
         }
     }
+}
 
+void TIMER1_IRQHandler(void)
+{
     if (TIM_GetIntStatus(LPC_TIM1, TIM_MR0_INT) == SET)
     {
     	TIM_ClearIntPending(LPC_TIM1, TIM_MR0_INT);
@@ -157,7 +160,11 @@ int main(void)
 
     NVIC_SetPriority(EINT3_IRQn, MID_PRIORITY); /* Set the priority of the external interrupt 0 */
 
+
     NVIC_SetPriority(TIMER0_IRQn, HIGH_PRIORITY); /* Set the priority of the timer 0 */
+
+    NVIC_SetPriority(TIMER1_IRQn, HIGH_PRIORITY); /* Set the priority of the timer 0 */
+
 
     NVIC_EnableIRQ(EINT0_IRQn); /* Enable the external interrupt 0 */
 

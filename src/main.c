@@ -1,3 +1,4 @@
+
 /*
  * @file main.c
  * @brief Main file for the project
@@ -28,6 +29,7 @@ void EINT0_IRQHandler(void)
         // Config falling edge
         LPC_GPIO0->FIOSET |= MOTOR_POS_PIN; /* Turn on the motor to close the door */
         LPC_GPIO0->FIOSET |= ALARM_PIN; /* Trigger the alarm */
+        TIM_Cmd(LPC_TIM0, ENABLE);
         EXTI_SetPolarity(EXTI_EINT0, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE);
     }
     else
@@ -50,6 +52,7 @@ void EINT1_IRQHandler(void)
         // An intruder has been detected
         // Config falling edge
         LPC_GPIO0->FIOSET |= MOTOR_NEG_PIN; /* Turn on the motor to close the door */
+        TIM_Cmd(LPC_TIM1, ENABLE);
         EXTI_SetPolarity(EXTI_EINT1, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE);
     }
     else
@@ -68,10 +71,19 @@ void TIMER0_IRQHandler(void)
     {
     	TIM_ClearIntPending(LPC_TIM0, TIM_MR0_INT);
 
-        if(LPC_GPIO0->FIOPIN & (MOTOR_POS_PIN || MOTOR_NEG_PIN))
+        if(LPC_GPIO0->FIOPIN & MOTOR_POS_PIN)
         {
             LPC_GPIO0->FIOCLR |= MOTOR_POS_PIN; /* Turn off the motor */
-            LPC_GPIO0->FIOCLR |= MOTOR_NEG_PIN; /* Turn on the motor */
+        }
+    }
+
+    if (TIM_GetIntStatus(LPC_TIM1, TIM_MR0_INT) == SET)
+    {
+    	TIM_ClearIntPending(LPC_TIM1, TIM_MR0_INT);
+
+        if(LPC_GPIO0->FIOPIN & MOTOR_NEG_PIN)
+        {
+            LPC_GPIO0->FIOCLR |= MOTOR_NEG_PIN; /* Turn off the motor */
         }
     }
 }
@@ -102,6 +114,7 @@ void EINT3_IRQHandler(void)
     {
         LPC_GPIO0->FIOSET |= MOTOR_POS_PIN; /* Turn on the motor */
         LPC_GPIO0->FIOCLR |= MOTOR_NEG_PIN;
+        TIM_Cmd(LPC_TIM0, ENABLE);
         // Configurar flanco descendente
         EXTI_SetPolarity(EXTI_EINT3, EXTI_POLARITY_LOW_ACTIVE_OR_FALLING_EDGE);
     }
@@ -109,6 +122,7 @@ void EINT3_IRQHandler(void)
     {
         LPC_GPIO0->FIOSET |= MOTOR_NEG_PIN; /* Turn on the motor */
         LPC_GPIO0->FIOCLR |= MOTOR_POS_PIN;
+        TIM_Cmd(LPC_TIM1, ENABLE);
         // Configurar flanco ascendente
         EXTI_SetPolarity(EXTI_EINT3, EXTI_POLARITY_HIGH_ACTIVE_OR_RISING_EDGE);
     }

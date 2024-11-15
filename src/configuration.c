@@ -5,6 +5,8 @@
 
 #include "configuration.h" /**< Include the configuration header file */
 
+static uint32_t duty_cycle = 0; /**< Duty cycle for the PWM signal */
+
 void system_clock_setup(void)
 {
     /* Configure the system clock to 72 MHz using PLL and 8 MHz HSE */

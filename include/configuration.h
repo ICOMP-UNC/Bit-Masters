@@ -150,8 +150,6 @@
 #define CLOSE_DOOR_TASK_NAME                "close_door"
 #define OPEN_DOOR_TASK_NAME                 "open_door"
 
-static uint32_t duty_cycle = 0; /**< Duty cycle for the PWM signal */
-
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */

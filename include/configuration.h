@@ -23,7 +23,8 @@
 #define LOW_PRIORITY  2 /**< Define the low priority */
 
 #define PRESCALE_VALUE 1000 /**< Define the prescale value */
-#define MATCH_CHANNEL 0
+#define MATCH_CHANNEL_0 0
+#define MATCH_CHANNEL_1 1
 #define MATCH_VALUE 5000
 
 
@@ -43,4 +44,3 @@ void config_eint(void);
 
 
 void config_timer_and_match(void);
-

@@ -37,6 +37,9 @@ void config_ports(void)
 
     PINSEL_ConfigPin(&pin_cfg); /** Configure the pin */
 
+    pin_cfg.Pinnum = PINSEL_PIN_11; // EINT1
+    PINSEL_ConfigPin(&pin_cfg); /** Configure the pin */
+
     /* Configure the switch high pin */
 
     pin_cfg.Pinnum = PINSEL_PIN_13; /** Assign pin 11 to the pin configuration */
@@ -76,6 +79,9 @@ void config_eint(void)
     eint_init_struct.EXTI_Line =
         EXTI_EINT3; /** Assign external interrupt 3 to the external interrupt initialization structure */
 
+    EXTI_Config(&eint_init_struct); /** Initialize the external interrupt */
+
+    eint_init_struct.EXTI_Line = EXTI_EINT1;
     EXTI_Config(&eint_init_struct); /** Initialize the external interrupt */
 }
 

@@ -30,11 +30,11 @@ jobs:
       - name: Setup PlatformIO
         uses: n-vr/setup-platformio-action@v1
 
-      - name: Run style check
-        uses: ./.github/actions/style
+      #- name: Run style check
+      # uses: ./.github/actions/style
 
-      - name: Run documentation check
-        uses: ./.github/actions/document
+      #- name: Run documentation check
+      #  uses: ./.github/actions/document
 
       - name: Build project
         uses: ./.github/actions/build

@@ -36,5 +36,5 @@ jobs:
       #- name: Run documentation check
       #  uses: ./.github/actions/document
 
-      - name: Build project
-        uses: ./.github/actions/build
+      - name: Build PlatformIO project
+        run: pio run

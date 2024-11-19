@@ -1,22 +1,16 @@
-name: Build PlatformIO project
-on:
-  push:
-    branches: [ actions ]
-  pull_request:
-    branches: [ actions ]
+name: "Build PlatformIO Project"
+description: "Build the PlatformIO project"
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v2
-      
-      # Setup PlatformIO in PATH
-      - name: Setup PlatformIO
-        uses: n-vr/setup-platformio-action@v1
-      
-      # Build the PlatformIO project
-      - name: Build PlatformIO project
-        run: pio run
+inputs:
+  path:
+    required: false
+    description: "Path to the PlatformIO project"
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Build with PlatformIO"
+      shell: bash
+      run: |
+        pio run -d ${{ inputs.path }}

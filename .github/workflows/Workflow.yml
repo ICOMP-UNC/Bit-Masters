@@ -27,6 +27,9 @@ jobs:
           packages: doxygen gcovr lcov cppcheck graphviz clang-format
           version: 1.0
 
+      - name: Setup PlatformIO
+        uses: n-vr/setup-platformio-action@v1
+
       - name: Run style check
         uses: ./.github/actions/style
 

@@ -6,6 +6,19 @@
  * This file is based on examples from the libopencm3 project.
  */
 
+/**
+ * @file main.c
+ * @brief Control system for various components (motor, sensors, door, etc.) using FreeRTOS and DMA.
+ *
+ * This file implements the control system that uses DMA for USART communication, 
+ * FreeRTOS tasks for controlling various components like a motor, door, and sensors.
+ * The system uses ADC to monitor battery levels and temperature, and EXTI interrupts 
+ * for detecting button presses and sensor inputs.
+ *
+ * @author [Your Name]
+ * @date [Current Date]
+ */
+
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/exti.h>
@@ -18,89 +31,348 @@
 #include <stdio.h>
 #include <stdarg.h> 
 
-// Free RTOS headers
+// FreeRTOS headers
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 
 /* Constants */
+
+/**
+ * @brief Define for logical TRUE
+ */
 #define TRUE    1
+
+/**
+ * @brief Define for logical FALSE
+ */
+#define FALSE   0
+
+/**
+ * @brief Define for falling edge detection
+ */
 #define FALLING 0
+
+/**
+ * @brief Define for rising edge detection
+ */
 #define RISING  1
 
 /* Pin Definitions */
-#define MOTOR_NEG_PORT    GPIOA
-#define MOTOR_NEG_PIN     GPIO7 /* PC13 connected to onboard LED */
-#define MOTOR_POS_PORT    GPIOA
-#define MOTOR_POS_PIN     GPIO6 /* PC13 connected to onboard LED */
-#define SWITCH_PORT GPIOA
-#define SWITCH_PIN  GPIO0 /* PA0 connected to button (switch) */
-#define OVERRIDE_PORT GPIOA
-#define OVERRIDE_PIN  GPIO1 /* PA1 connected to button (switch) */
-#define MOTION_SENSOR_PORT GPIOA
-#define MOTION_SENSOR_PIN  GPIO2 /* PA1 connected to button (switch) */
-#define FIRE_SENSOR_PORT GPIOA
-#define FIRE_SENSOR_PIN  GPIO3 /* PA1 connected to button (switch) */
-#define ALARM_PORT GPIOA
-#define ALARM_PIN  GPIO8 /* PA1 connected to button (switch) */
-#define LED_PORT GPIOB
-#define LED_PIN  GPIO8 /* PB6 connected to LED */
-#define FAN_PORT GPIOB
-#define FAN_PIN  GPIO9 /* PB6 connected to LED */
-#define PRESCALER_VALUE 71
+
+/** 
+ * @brief Port and pin configuration for motor negative terminal
+ */
+#define MOTOR_NEG_PORT    GPIOA /**< Port A connected to motor negative terminal */
+#define MOTOR_NEG_PIN     GPIO7  /**< PA7 connected to motor negative terminal */
+
+/** 
+ * @brief Port and pin configuration for motor positive terminal
+ */
+#define MOTOR_POS_PORT    GPIOA /**< Port A connected to motor positive terminal */
+#define MOTOR_POS_PIN     GPIO6  /**< PA6 connected to motor positive terminal */
+
+/** 
+ * @brief Port and pin configuration for switch (manual control)
+ */
+#define SWITCH_PORT GPIOA /**< Port A connected to button (switch) */
+#define SWITCH_PIN  GPIO0 /**< PA0 connected to button (switch) */
+
+/** 
+ * @brief Port and pin configuration for override control
+ */
+#define OVERRIDE_PORT GPIOA /**< Port A connected to button (override) */
+#define OVERRIDE_PIN  GPIO1 /**< PA1 connected to button (override) */
+
+/** 
+ * @brief Port and pin configuration for motion sensor
+ */
+#define MOTION_SENSOR_PORT GPIOA /**< Port A connected to motion sensor */
+#define MOTION_SENSOR_PIN  GPIO2 /**< PA2 connected to motion sensor */
+
+/** 
+ * @brief Port and pin configuration for fire sensor
+ */
+#define FIRE_SENSOR_PORT GPIOA /**< Port A connected to fire sensor */
+#define FIRE_SENSOR_PIN  GPIO3 /**< PA3 connected to fire sensor */
+
+/** 
+ * @brief Port and pin configuration for alarm
+ */
+#define ALARM_PORT GPIOA /**< Port A connected to alarm */
+#define ALARM_PIN  GPIO8 /**< PA8 connected to alarm */
+
+/** 
+ * @brief Port and pin configuration for LED
+ */ 
+#define LED_PORT GPIOB /**< Port B connected to LED */
+#define LED_PIN  GPIO8 /**< PB8 connected to LED */
+
+/** 
+ * @brief Port and pin configuration for fan
+ */
+#define FAN_PORT GPIOB /**< Port B connected to fan */
+#define FAN_PIN  GPIO9 /**< PB9 connected to fan */
+
+/**
+ * @brief Prescaler value for timer
+ */
+#define PRESCALER_VALUE 71 
+
+/**
+ * @brief Timer period for the timer
+ */
 #define TIMER_PERIOD 999
+
+/**
+ * @brief Maximum ADC value (12-bit resolution)
+ */
 #define ADC_MAX_VALUE 4095
+
+/**
+ * @brief Percentage constant (100)
+ */
 #define PERCENTAGE 100
-#define TRUE 1
-#define FALSE 0
-#define ADC_BUFFER_SIZE 
-#define TX_BUFFER_SIZE 128  // Tamaño del buffer de transmisión DMA
+
+/** 
+ * @brief Buffer size for ADC data storage
+ */
+#define ADC_BUFFER_SIZE 128
+
+/** 
+ * @brief Transmission buffer size for DMA
+ */
+#define TX_BUFFER_SIZE 128  /**< Buffer size for USART transmission via DMA */
+
+/** 
+ * @brief Delay time for one minute in milliseconds
+ */
 #define ONE_MINUTE_DELAY 60000 /**< 60000 ms */
 
 /* Task names */
+
+/** 
+ * @brief Task name for temperature control
+ */
 #define TEMPERATURE_CONTROL_TASK_NAME       "temperature_control"
+
+/** 
+ * @brief Task name for battery control
+ */
 #define BATTERY_CONTROL_TASK_NAME           "battery_control"
 
+/** 
+ * @brief Task name for door control to close
+ */
 #define CLOSE_DOOR_TASK_NAME                "close_door"
+
+/** 
+ * @brief Task name for door control to open
+ */
 #define OPEN_DOOR_TASK_NAME                 "open_door"
 
 /* Task priorities */
+
+/** 
+ * @brief Priority for temperature control task
+ */
 #define TEMPERATURE_CONTROL_PRIORITY        tskIDLE_PRIORITY + 2
+
+/** 
+ * @brief Priority for battery control task
+ */
 #define BATTERY_CONTROL_PRIORITY            tskIDLE_PRIORITY + 1
 
+/** 
+ * @brief Priority for door close task
+ */
 #define CLOSE_DOOR_PRIORITY                 tskIDLE_PRIORITY + 2
+
+/** 
+ * @brief Priority for door open task
+ */
 #define OPEN_DOOR_PRIORITY                  tskIDLE_PRIORITY + 2
 
+/** 
+ * @brief Door states: CLOSED or OPEN
+ */
 #define CLOSED 1
 #define OPEN 0
 
+/** 
+ * @brief ADC clock enable macro for ADC1
+ */
+#define ADC_CLOCK_ENABLE             RCC_ADC1           /**< Enable the clock for ADC1 */
 
-static char tx_buffer[TX_BUFFER_SIZE];  // Buffer de transmisión
-static volatile uint8_t dma_tx_busy = 0;  // Flag para indicar si el DMA está ocupado
+/** 
+ * @brief ADC disable macro for ADC1
+ */
+#define ADC_DISABLE                  (~ADC_CR2_ADON)    /**< Clear the ADON bit to disable the ADC */
 
-static uint32_t duty_cycle = 0;
-static uint32_t temp_value = 0;
+/** 
+ * @brief Mask for the sequence length bits in ADC1_SQR1 register
+ */
+#define ADC_SEQ_LENGTH_MASK          0xF                /**< Mask for the sequence length bits */
 
-/* EXTI state direction (falling or rising edge detection) */
+/** 
+ * @brief Position of the sequence length bits in ADC1_SQR1 register
+ */
+#define ADC_SEQ_LENGTH_POS           20                 /**< Position of the sequence length bits */
+
+/** 
+ * @brief Sequence length set to 1 channel in ADC configuration
+ */
+#define ADC_SEQ_LENGTH_1_CHANNEL     0x0                /**< Set the sequence length to 1 channel */
+
+/** 
+ * @brief Mask for the sample time bits in ADC1_SMPR2 register
+ */
+#define ADC_SAMPLE_TIME_MASK         0x7                /**< Mask for the sample time bits */
+
+/** 
+ * @brief Position of the sample time bits for channel 4 in ADC1_SMPR2 register
+ */
+#define ADC_CHANNEL_4_SAMPLE_POS     12                 /**< Position of the sample time bits for channel 4 */
+
+/** 
+ * @brief Position of the sample time bits for channel 5 in ADC1_SMPR2 register
+ */
+#define ADC_CHANNEL_5_SAMPLE_POS     15                 /**< Position of the sample time bits for channel 5 */
+
+/** 
+ * @brief Sample time of 1.5 cycles for ADC channel configuration
+ */
+#define ADC_SAMPLE_TIME_1_5_CYCLES   ADC_SMPR_SMP_1DOT5CYC /**< Set sample time to 1.5 cycles */
+
+/** 
+ * @brief ADC conversion start macro for regular conversion
+ */
+#define ADC_START_CONVERSION         ADC_CR2_SWSTART    /**< Set the SWSTART bit to begin conversion */
+
+/** 
+ * @brief ADC DMA enable macro to enable DMA for ADC
+ */
+#define ADC_ENABLE_DMA               ADC_CR2_DMA        /**< Enable DMA mode for ADC */
+
+/** 
+ * @brief Define for enabling the ADC (ADC1)
+ */
+#define ADC_ENABLE                  ADC_CR2_ADON      /**< Set the ADON bit to enable ADC1 */
+
+/** 
+ * @brief Define for disabling the ADC (ADC1)
+ */
+#define ADC_DISABLE                 (~ADC_CR2_ADON)   /**< Clear the ADON bit to disable ADC1 */
+
+/** 
+ * @brief Define for the ADC sequence channel mask in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_MASK   0x1F              /**< Mask for the sequence channel bits */
+
+/** 
+ * @brief Define for the position of the sequence channel in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_POS    0                 /**< Position of the channel in the sequence */
+
+/** 
+ * @brief Define for the ADC channel used to read the battery
+ */
+#define ADC_CHANNEL_BATT            4                 /**< ADC channel for reading battery voltage */
+
+/** 
+ * @brief Define for the ADC channel used to read the temperature
+ */
+#define ADC_CHANNEL_TEMP            5                 /**< ADC channel for reading temperature */
+
+/** 
+ * @brief Define for the conversion factor to scale ADC value to temperature (example for 30°C range)
+ */
+#define TEMP_CONVERSION_FACTOR      30                /**< Conversion factor for temperature calculation */
+
+  
+
+/* Global variables */
+
+/**
+ * @brief Buffer for DMA transmission
+ */
+static char tx_buffer[TX_BUFFER_SIZE];  /**< Transmission buffer */
+
+/**
+ * @brief Flag to indicate if DMA is busy with a transmission
+ */
+static volatile uint8_t dma_tx_busy = 0;  /**< DMA busy flag */
+
+/**
+ * @brief Duty cycle value for PWM control
+ */
+static uint32_t duty_cycle = 0; /**< PWM duty cycle */
+
+/**
+ * @brief Temperature value (from ADC)
+ */
+static uint32_t temp_value = 0; /**< Temperature value */
+
+/**
+ * @brief Edge direction for EXTI (interrupt) on pin 0
+ */
 static uint16_t exti_direction_0 = FALLING;
+
+/**
+ * @brief Edge direction for EXTI (interrupt) on pin 1
+ */
 static uint16_t exti_direction_1 = FALLING;
+
+/**
+ * @brief Edge direction for EXTI (interrupt) on pin 2
+ */
 static uint16_t exti_direction_2 = FALLING;
+
+/**
+ * @brief Edge direction for EXTI (interrupt) on pin 3
+ */
 static uint16_t exti_direction_3 = FALLING;
 
-static uint32_t manual_controls = 0; /**< Variable to store the manual control state */
+/**
+ * @brief ADC value buffer for battery and temperature readings
+ */
+static int get_batt = 0; /**< Battery value flag */
+static int get_temp = 0; /**< Temperature value flag */
 
-static int get_batt = 0;
-static int get_temp = 0;
+/**
+ * @brief ADC data buffer
+ */
+static uint16_t adc_data = 0; /**< ADC data buffer */
 
-static uint16_t adc_data = 0; /**< Buffer to store ADC data */
+/**
+ * @brief Door state: open or closed
+ */
+static door_state = OPEN; /**< Door state */
 
-static door_state = OPEN;
+/* FreeRTOS Semaphore Handles */
 
-SemaphoreHandle_t xADC = NULL;
-SemaphoreHandle_t xDoor = NULL;
+/**
+ * @brief Semaphore handle for ADC synchronization
+ */
+SemaphoreHandle_t xADC = NULL; /**< Semaphore for ADC synchronization */
 
-TaskHandle_t closeDoorTaskHandle = NULL;
-TaskHandle_t openDoorTaskHandle = NULL;
+/**
+ * @brief Semaphore handle for door synchronization
+ */
+SemaphoreHandle_t xDoor = NULL; /**< Semaphore for door synchronization */
+
+/* FreeRTOS Task Handles */
+
+/**
+ * @brief Task handle for closing door task
+ */
+TaskHandle_t closeDoorTaskHandle = NULL; /**< Task handle for close door task */
+
+/**
+ * @brief Task handle for opening door task
+ */
+TaskHandle_t openDoorTaskHandle = NULL; /**< Task handle for open door task */
+
 
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
@@ -112,35 +384,47 @@ void system_clock_setup(void)
 }
 
 /**
- * @brief Configures GPIO pin PC13 as an output for the onboard LED and PA0 as input for the button (switch).
+ * @brief Configures GPIO pins for motor control, sensors, alarms, and other components.
+ * 
+ * This function configures the following GPIO pins:
+ * - Motor negative and positive control pins (MOTOR_NEG_PIN and MOTOR_POS_PIN)
+ * - Onboard LED and fan control pins (LED_PIN and FAN_PIN)
+ * - Alarm control pin (ALARM_PIN)
+ * - Motion and fire sensor input pins (MOTION_SENSOR_PIN and FIRE_SENSOR_PIN)
+ * - Button (switch) and override button input pins (SWITCH_PIN and OVERRIDE_PIN)
+ * 
+ * It also enables the necessary peripheral clocks for GPIOA, GPIOB, and GPIOC.
+ * The pins are configured as input or output with appropriate settings (push-pull or pull-up/down).
  */
 void gpio_setup(void)
 {
     /* Enable GPIO clocks */
-    rcc_periph_clock_enable(RCC_GPIOC);
-    rcc_periph_clock_enable(RCC_GPIOA);
-    rcc_periph_clock_enable(RCC_GPIOB);
+    rcc_periph_clock_enable(RCC_GPIOC); /**< Enable GPIOC peripheral clock */
+    rcc_periph_clock_enable(RCC_GPIOA); /**< Enable GPIOA peripheral clock */
+    rcc_periph_clock_enable(RCC_GPIOB); /**< Enable GPIOB peripheral clock */
 
-    
-    gpio_set_mode(MOTOR_NEG_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_NEG_PIN);
+    /* Configure GPIO pins for motor control */
+    gpio_set_mode(MOTOR_NEG_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_NEG_PIN); /**< Set MOTOR_NEG_PIN as output with push-pull configuration */
+    gpio_set_mode(MOTOR_POS_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_POS_PIN); /**< Set MOTOR_POS_PIN as output with push-pull configuration */
 
-    gpio_set_mode(MOTOR_POS_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_POS_PIN);
+    /* Configure GPIO pins for LED and Fan */
+    gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, LED_PIN); /**< Set LED_PIN as output with alternate function push-pull configuration */
+    gpio_set_mode(FAN_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, FAN_PIN); /**< Set FAN_PIN as output with alternate function push-pull configuration */
 
-    gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, LED_PIN);
+    /* Configure GPIO pin for Alarm */
+    gpio_set_mode(ALARM_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, ALARM_PIN); /**< Set ALARM_PIN as output with push-pull configuration */
 
-    gpio_set_mode(FAN_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, FAN_PIN);
+    /* Configure GPIO pins for motion and fire sensors */
+    gpio_set_mode(MOTION_SENSOR_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, MOTION_SENSOR_PIN); /**< Set MOTION_SENSOR_PIN as input with pull-up/down configuration */
+    gpio_set_mode(FIRE_SENSOR_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, FIRE_SENSOR_PIN); /**< Set FIRE_SENSOR_PIN as input with pull-up/down configuration */
 
-    gpio_set_mode(ALARM_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, ALARM_PIN);
+    /* Configure PA0 as input for switch with pull-up/down configuration */
+    gpio_set_mode(SWITCH_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, SWITCH_PIN); /**< Set SWITCH_PIN as input with pull-up/down configuration */
 
-    gpio_set_mode(MOTION_SENSOR_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, MOTION_SENSOR_PIN);
-
-    gpio_set_mode(FIRE_SENSOR_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, FIRE_SENSOR_PIN);
-
-    /* Configure PA0 as input (button) with floating input configuration */
-    gpio_set_mode(SWITCH_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, SWITCH_PIN);
-    /* Configure PA1 as input (button) with floating input configuration */
-    gpio_set_mode(OVERRIDE_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, OVERRIDE_PIN);
+    /* Configure PA1 as input for override button with pull-up/down configuration */
+    gpio_set_mode(OVERRIDE_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, OVERRIDE_PIN); /**< Set OVERRIDE_PIN as input with pull-up/down configuration */
 }
+
 
 /**
  * @brief Configures EXTI for PA0 to generate interrupts on both falling and rising edges.
@@ -177,86 +461,95 @@ void exti_setup(void)
     exti_enable_request(EXTI3);                    /* Enable EXTI3 interrupt */
 }
 
-// Configuración del ADC para el canal 9 (PB1)
+/**
+ * @brief Configures the ADC for a specific channel.
+ *
+ * This function configures the ADC to work with a single channel, enables the clock, 
+ * sets sample times, and starts the conversion process. It also enables DMA mode for the ADC.
+ */
 void configure_adc(void)
 {
-     // Habilitar reloj para el ADC
-    rcc_periph_clock_enable(RCC_ADC1);
+    /* Enable clock for ADC1 */
+    rcc_periph_clock_enable(ADC_CLOCK_ENABLE);
 
-    // Apagar el ADC antes de configurarlo
-    ADC1_CR2 &= ~ADC_CR2_ADON;
+    /* Turn off the ADC before configuring it */
+    ADC1_CR2 &= ADC_DISABLE;
 
-    // Configurar la longitud de la secuencia regular a 1 (un canal)
-    ADC1_SQR1 &= ~(0xF << 20); // Limpia los bits [23:20] para longitud
-    ADC1_SQR1 |= (0 << 20);    // Longitud de la secuencia = 1
+    /* Configure the regular sequence length to 1 (single channel) */
+    ADC1_SQR1 &= ~(ADC_SEQ_LENGTH_MASK << ADC_SEQ_LENGTH_POS);  /* Clear sequence length bits */
+    ADC1_SQR1 |= (ADC_SEQ_LENGTH_1_CHANNEL << ADC_SEQ_LENGTH_POS); /* Set sequence length to 1 channel */
 
-    // Configurar tiempo de muestreo para canal 4
-    ADC1_SMPR2 &= ~(0x7 << 12); // Limpia los bits [14:12] para canal 4
-    ADC1_SMPR2 |= (ADC_SMPR_SMP_1DOT5CYC << 12); // Tiempo de muestreo 1.5 ciclos
+    /* Configure the sample time for channel 4 */
+    ADC1_SMPR2 &= ~(ADC_SAMPLE_TIME_MASK << ADC_CHANNEL_4_SAMPLE_POS); /* Clear sample time bits for channel 4 */
+    ADC1_SMPR2 |= (ADC_SAMPLE_TIME_1_5_CYCLES << ADC_CHANNEL_4_SAMPLE_POS); /* Set sample time to 1.5 cycles for channel 4 */
 
-    // Configurar tiempo de muestreo para canal 5
-    ADC1_SMPR2 &= ~(0x7 << 15); // Limpia los bits [17:15] para canal 5
-    ADC1_SMPR2 |= (ADC_SMPR_SMP_1DOT5CYC << 15); // Tiempo de muestreo 1.5 ciclos
+    /* Configure the sample time for channel 5 */
+    ADC1_SMPR2 &= ~(ADC_SAMPLE_TIME_MASK << ADC_CHANNEL_5_SAMPLE_POS); /* Clear sample time bits for channel 5 */
+    ADC1_SMPR2 |= (ADC_SAMPLE_TIME_1_5_CYCLES << ADC_CHANNEL_5_SAMPLE_POS); /* Set sample time to 1.5 cycles for channel 5 */
 
-    ADC1_CR2 |= ADC_CR2_SWSTART; // Inicia la conversión regular
+    /* Start the regular conversion */
+    ADC1_CR2 |= ADC_START_CONVERSION;
 
-    ADC1_CR2 |= ADC_CR2_DMA; // Habilita el modo DMA
-
+    /* Enable DMA mode for ADC */
+    ADC1_CR2 |= ADC_ENABLE_DMA;
 }
 
+/**
+ * @brief Changes the ADC sequence based on the active channel (battery or temperature)
+ */
+void change_adc_sequence(void)
+{
+    ADC1_CR2 &= ADC_DISABLE; /**< Disable ADC before changing the sequence */
 
-void change_adc_sequence(void){
+    dma_disable_channel(DMA1, DMA_CHANNEL1); /**< Disable DMA channel */
 
-        ADC1_CR2 &= ~ADC_CR2_ADON; // apaga el adc
+    if(get_batt == TRUE){
+        /* Configure channel 4 (battery) as the first channel in the sequence */
+        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK; /**< Clear the bits for channel configuration */
+        ADC1_SQR3 |= (ADC_CHANNEL_BATT << ADC_SEQUENCE_CHANNEL_POS); /**< Set channel 4 (battery) */
+    }
 
-        dma_disable_channel(DMA1, DMA_CHANNEL1);
+    if(get_temp == TRUE){
+        /* Configure channel 5 (temperature) as the first channel in the sequence */
+        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK; /**< Clear the bits for channel configuration */
+        ADC1_SQR3 |= (ADC_CHANNEL_TEMP << ADC_SEQUENCE_CHANNEL_POS); /**< Set channel 5 (temperature) */
+    }
 
-        if(get_batt){
-            // Configurar canal 4 en la primera posición de la secuencia regular
-            ADC1_SQR3 &= ~0x1F;        // Limpia los bits [4:0]
-            ADC1_SQR3 |= (4 << 0);     // Configura canal 4
-        }
+    ADC1_CR2 |= ADC_ENABLE; /**< Enable ADC after changing the sequence */
 
-        if(get_temp){
-            // Configurar canal 5 en la primera posición de la secuencia regular
-            ADC1_SQR3 &= ~0x1F;        // Limpia los bits [4:0]
-            ADC1_SQR3 |= (5 << 0);     // Configura canal 5
-        }
-
-        // Encender el ADC
-        ADC1_CR2 |= ADC_CR2_ADON;
-
-        dma_enable_channel(DMA1, DMA_CHANNEL1);
-
+    dma_enable_channel(DMA1, DMA_CHANNEL1); /**< Enable DMA channel */
 }
 
-// Lee el valor actual del ADC en el canal 9
+/**
+ * @brief Reads the current battery value from the ADC
+ */
 uint16_t get_battery_value(void)
 {
     if(xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE){
-    get_batt = 1;
-    get_temp = 0;
-    change_adc_sequence();
-    adc_start_conversion_direct(ADC1);       // Inicia la conversión
-    //dma_enable_channel(DMA1, DMA_CHANNEL1);
-    xSemaphoreGive(xADC);
+        get_batt = TRUE;           /**< Set the flag to read the battery */
+        get_temp = FALSE;          /**< Clear the flag for temperature reading */
+        change_adc_sequence();     /**< Change ADC sequence for battery reading */
+        adc_start_conversion_direct(ADC1);  /**< Start ADC conversion for battery */
+        xSemaphoreGive(xADC);      /**< Release the semaphore */
     }
-    return((adc_data * PERCENTAGE) / ADC_MAX_VALUE);           // Retorna el valor convertido
-    
+    return((adc_data * PERCENTAGE) / ADC_MAX_VALUE); /**< Return the battery value as a percentage */
 }
 
+/**
+ * @brief Reads the current temperature value from the ADC
+ */
 uint16_t get_temp_value(void)
 {
     if(xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE){
-    get_batt = 0;
-    get_temp = 1;
-    change_adc_sequence();
-    adc_start_conversion_direct(ADC1);       // Inicia la conversión
-    //dma_enable_channel(DMA1, DMA_CHANNEL1);
-    xSemaphoreGive(xADC);
+        get_batt = FALSE;          /**< Clear the flag for battery reading */
+        get_temp = TRUE;           /**< Set the flag to read the temperature */
+        change_adc_sequence();     /**< Change ADC sequence for temperature reading */
+        adc_start_conversion_direct(ADC1);  /**< Start ADC conversion for temperature */
+        xSemaphoreGive(xADC);      /**< Release the semaphore */
     }
-    return ((adc_data * 30) / ADC_MAX_VALUE);           // Retorna el valor convertido 
+    return ((adc_data * TEMP_CONVERSION_FACTOR) / ADC_MAX_VALUE); /**< Return the temperature value in Celsius */
 }
+
 
 void configure_usart(void) {
     rcc_periph_clock_enable(RCC_USART1);        // Habilita USART1

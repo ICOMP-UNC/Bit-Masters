@@ -37,4 +37,6 @@ jobs:
       #  uses: ./.github/actions/document
 
       - name: Build PlatformIO project
-        run: pio run
+        uses: ./.github/actions/build
+        with:
+          path: .

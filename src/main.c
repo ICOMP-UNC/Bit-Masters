@@ -3,15 +3,15 @@
  * @file main.c
  * @brief Control system for various components (motor, sensors, door, etc.) using FreeRTOS and DMA.
  *
- * This file implements the control system that uses DMA for USART communication, 
+ * This file implements the control system that uses DMA for USART communication,
  * FreeRTOS tasks for controlling various components like a motor, door, and sensors.
- * The system uses ADC to monitor battery levels and temperature, and EXTI interrupts 
+ * The system uses ADC to monitor battery levels and temperature, and EXTI interrupts
  * for detecting button presses and sensor inputs.
  */
 
 // Custom modules
-#include "configuration.h" /*<< Includes system configuration and hardware definitions. */ 
-#include "system_response.h" /*<< Includes functions for controlling door motor operations (open, close, stop). */ 
+#include "configuration.h"   /*<< Includes system configuration and hardware definitions. */
+#include "system_response.h" /*<< Includes functions for controlling door motor operations (open, close, stop). */
 
 /**
  * @brief Maximum ADC value (12-bit resolution)
@@ -23,26 +23,26 @@
  */
 #define PERCENTAGE 100
 
-/** 
+/**
  * @brief Transmission buffer size for DMA
  */
-#define TX_BUFFER_SIZE 128  /**< Buffer size for USART transmission via DMA */
+#define TX_BUFFER_SIZE 128 /**< Buffer size for USART transmission via DMA */
 
-/** 
+/**
  * @brief Door states: CLOSED or OPEN
  */
 #define CLOSED 1
-#define OPEN 0
+#define OPEN   0
 
-/** 
+/**
  * @brief ADC disable macro for ADC1
  */
-#define ADC_DISABLE                  (~ADC_CR2_ADON)    /**< Clear the ADON bit to disable the ADC */
+#define ADC_DISABLE (~ADC_CR2_ADON) /**< Clear the ADON bit to disable the ADC */
 
-/** 
+/**
  * @brief Define for the conversion factor to scale ADC value to temperature (example for 30°C range)
  */
-#define TEMP_CONVERSION_FACTOR      240                /**< Conversion factor for temperature calculation */
+#define TEMP_CONVERSION_FACTOR 240 /**< Conversion factor for temperature calculation */
 
 /**
  * @brief Threshold temperature in degrees Celsius to trigger actions.
@@ -71,28 +71,28 @@
 
 /**
  * @brief Priority for EXTI0 interrupt.
- * 
+ *
  * Defines the priority level for the EXTI0 interrupt. Lower numbers indicate higher priority.
  */
 #define EXTI0_IRQ_PRIORITY 2 /**< Priority for EXTI0 interrupt */
 
 /**
  * @brief Priority for EXTI1 interrupt.
- * 
+ *
  * Defines the priority level for the EXTI1 interrupt. Lower numbers indicate higher priority.
  */
 #define EXTI1_IRQ_PRIORITY 0 /**< Priority for EXTI1 interrupt */
 
 /**
  * @brief Priority for EXTI2 interrupt.
- * 
+ *
  * Defines the priority level for the EXTI2 interrupt. Lower numbers indicate higher priority.
  */
 #define EXTI2_IRQ_PRIORITY 1 /**< Priority for EXTI2 interrupt */
 
 /**
  * @brief Priority for EXTI3 interrupt.
- * 
+ *
  * Defines the priority level for the EXTI3 interrupt. Lower numbers indicate higher priority.
  */
 #define EXTI3_IRQ_PRIORITY 1 /**< Priority for EXTI3 interrupt */
@@ -102,7 +102,7 @@
 /**
  * @brief Buffer for DMA transmission
  */
-static char tx_buffer[TX_BUFFER_SIZE];  /**< Transmission buffer */
+static char tx_buffer[TX_BUFFER_SIZE]; /**< Transmission buffer */
 
 /**
  * @brief Duty cycle value for PWM control
@@ -175,40 +175,41 @@ TaskHandle_t openDoorTaskHandle = NULL; /**< Task handle for open door task */
  * DMA Channel 1:
  * - Operates in circular mode with a fixed peripheral address and memory destination.
  * - Data size is 16-bit for both peripheral and memory.
- * 
+ *
  * DMA Channel 4:
  * - Reads from memory (incrementing address) and writes to USART1 data register.
  * - Data size is 8-bit for both peripheral and memory.
  * - Enables interrupt on transfer completion.
  */
-void dma_setup(void) {
+void dma_setup(void)
+{
     // Enable the clock for DMA1
     rcc_periph_clock_enable(RCC_DMA1);
 
     // --- DMA1 Channel 1 Configuration (ADC) ---
     dma_set_read_from_peripheral(DMA1, DMA_CHANNEL1);
     dma_set_peripheral_address(DMA1, DMA_CHANNEL1, (uint32_t)&ADC_DR(ADC1)); /* ADC1 data register as the source. */
-    dma_set_memory_address(DMA1, DMA_CHANNEL1, (uint32_t)&adc_data); /* Memory buffer as destination. */
-    dma_set_peripheral_size(DMA1, DMA_CHANNEL1, DMA_CCR_PSIZE_16BIT); /* 16-bit data size for peripheral. */
-    dma_set_memory_size(DMA1, DMA_CHANNEL1, DMA_CCR_MSIZE_16BIT); /* 16-bit data size for memory. */
-    dma_set_number_of_data(DMA1, DMA_CHANNEL1, 1); /* Transfer 1 data unit per cycle. */
-    dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL1); /* Memory address is fixed. */
-    dma_disable_peripheral_increment_mode(DMA1, DMA_CHANNEL1); /* Peripheral address is fixed. */
-    dma_set_priority(DMA1, DMA_CHANNEL1, DMA_CCR_PL_VERY_HIGH); /* Set high priority for ADC transfers. */
+    dma_set_memory_address(DMA1, DMA_CHANNEL1, (uint32_t)&adc_data);         /* Memory buffer as destination. */
+    dma_set_peripheral_size(DMA1, DMA_CHANNEL1, DMA_CCR_PSIZE_16BIT);        /* 16-bit data size for peripheral. */
+    dma_set_memory_size(DMA1, DMA_CHANNEL1, DMA_CCR_MSIZE_16BIT);            /* 16-bit data size for memory. */
+    dma_set_number_of_data(DMA1, DMA_CHANNEL1, 1);                           /* Transfer 1 data unit per cycle. */
+    dma_disable_memory_increment_mode(DMA1, DMA_CHANNEL1);                   /* Memory address is fixed. */
+    dma_disable_peripheral_increment_mode(DMA1, DMA_CHANNEL1);               /* Peripheral address is fixed. */
+    dma_set_priority(DMA1, DMA_CHANNEL1, DMA_CCR_PL_VERY_HIGH);              /* Set high priority for ADC transfers. */
     dma_enable_circular_mode(DMA1, DMA_CHANNEL1); /* Enable circular mode for continuous transfers. */
-    dma_enable_channel(DMA1, DMA_CHANNEL1); /* Activate DMA1 Channel 1. */
+    dma_enable_channel(DMA1, DMA_CHANNEL1);       /* Activate DMA1 Channel 1. */
 
     // --- DMA1 Channel 4 Configuration (USART1 TX) ---
     dma_disable_channel(DMA1, DMA_CHANNEL4); /* Ensure Channel 4 is disabled during setup. */
     dma_set_peripheral_address(DMA1, DMA_CHANNEL4, (uint32_t)&USART1_DR); /* USART1 data register as the destination. */
-    dma_set_memory_address(DMA1, DMA_CHANNEL4, (uint32_t)tx_buffer); /* TX buffer as the data source. */
-    dma_set_peripheral_size(DMA1, DMA_CHANNEL4, DMA_CCR_PSIZE_8BIT); /* 8-bit data size for peripheral. */
-    dma_set_memory_size(DMA1, DMA_CHANNEL4, DMA_CCR_MSIZE_8BIT); /* 8-bit data size for memory. */
-    dma_set_read_from_memory(DMA1, DMA_CHANNEL4); /* Memory as the source of data. */
-    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL4); /* Enable memory address increment. */
-    dma_set_priority(DMA1, DMA_CHANNEL4, DMA_CCR_PL_MEDIUM); /* Set medium priority for USART1 transfers. */
+    dma_set_memory_address(DMA1, DMA_CHANNEL4, (uint32_t)tx_buffer);      /* TX buffer as the data source. */
+    dma_set_peripheral_size(DMA1, DMA_CHANNEL4, DMA_CCR_PSIZE_8BIT);      /* 8-bit data size for peripheral. */
+    dma_set_memory_size(DMA1, DMA_CHANNEL4, DMA_CCR_MSIZE_8BIT);          /* 8-bit data size for memory. */
+    dma_set_read_from_memory(DMA1, DMA_CHANNEL4);                         /* Memory as the source of data. */
+    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL4);                 /* Enable memory address increment. */
+    dma_set_priority(DMA1, DMA_CHANNEL4, DMA_CCR_PL_MEDIUM);    /* Set medium priority for USART1 transfers. */
     dma_set_number_of_data(DMA1, DMA_CHANNEL4, TX_BUFFER_SIZE); /* Number of bytes to transfer. */
-    dma_enable_channel(DMA1, DMA_CHANNEL4); /* Activate DMA1 Channel 4. */
+    dma_enable_channel(DMA1, DMA_CHANNEL4);                     /* Activate DMA1 Channel 4. */
 
     // Enable transfer complete interrupt for DMA1 Channel 4
     dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL4);
@@ -224,15 +225,17 @@ void change_adc_sequence(void)
 
     dma_disable_channel(DMA1, DMA_CHANNEL1); /**< Disable DMA channel */
 
-    if(get_batt == TRUE){
+    if (get_batt == TRUE)
+    {
         /* Configure channel 4 (battery) as the first channel in the sequence */
-        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK; /**< Clear the bits for channel configuration */
+        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK;                     /**< Clear the bits for channel configuration */
         ADC1_SQR3 |= (ADC_CHANNEL_BATT << ADC_SEQUENCE_CHANNEL_POS); /**< Set channel 4 (battery) */
     }
 
-    if(get_temp == TRUE){
+    if (get_temp == TRUE)
+    {
         /* Configure channel 5 (temperature) as the first channel in the sequence */
-        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK; /**< Clear the bits for channel configuration */
+        ADC1_SQR3 &= ~ADC_SEQUENCE_CHANNEL_MASK;                     /**< Clear the bits for channel configuration */
         ADC1_SQR3 |= (ADC_CHANNEL_TEMP << ADC_SEQUENCE_CHANNEL_POS); /**< Set channel 5 (temperature) */
     }
 
@@ -246,14 +249,15 @@ void change_adc_sequence(void)
  */
 uint16_t get_battery_value(void)
 {
-    if(xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE){
-        get_batt = TRUE;           /**< Set the flag to read the battery */
-        get_temp = FALSE;          /**< Clear the flag for temperature reading */
-        change_adc_sequence();     /**< Change ADC sequence for battery reading */
-        adc_start_conversion_direct(ADC1);  /**< Start ADC conversion for battery */
-        xSemaphoreGive(xADC);      /**< Release the semaphore */
+    if (xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE)
+    {
+        get_batt = TRUE;                   /**< Set the flag to read the battery */
+        get_temp = FALSE;                  /**< Clear the flag for temperature reading */
+        change_adc_sequence();             /**< Change ADC sequence for battery reading */
+        adc_start_conversion_direct(ADC1); /**< Start ADC conversion for battery */
+        xSemaphoreGive(xADC);              /**< Release the semaphore */
     }
-    return((adc_data * PERCENTAGE) / ADC_MAX_VALUE); /**< Return the battery value as a percentage */
+    return ((adc_data * PERCENTAGE) / ADC_MAX_VALUE); /**< Return the battery value as a percentage */
 }
 
 /**
@@ -261,47 +265,50 @@ uint16_t get_battery_value(void)
  */
 uint16_t get_temp_value(void)
 {
-    if(xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE){
-        get_batt = FALSE;          /**< Clear the flag for battery reading */
-        get_temp = TRUE;           /**< Set the flag to read the temperature */
-        change_adc_sequence();     /**< Change ADC sequence for temperature reading */
-        adc_start_conversion_direct(ADC1);  /**< Start ADC conversion for temperature */
-        xSemaphoreGive(xADC);      /**< Release the semaphore */
+    if (xSemaphoreTake(xADC, portMAX_DELAY) == pdTRUE)
+    {
+        get_batt = FALSE;                  /**< Clear the flag for battery reading */
+        get_temp = TRUE;                   /**< Set the flag to read the temperature */
+        change_adc_sequence();             /**< Change ADC sequence for temperature reading */
+        adc_start_conversion_direct(ADC1); /**< Start ADC conversion for temperature */
+        xSemaphoreGive(xADC);              /**< Release the semaphore */
     }
     return ((adc_data * TEMP_CONVERSION_FACTOR) / ADC_MAX_VALUE); /**< Return the temperature value in Celsius */
 }
 
-
 /**
  * @brief Sends a formatted string via USART using DMA.
  *
- * This function sends a formatted string over USART. If the DMA transfer is currently busy, 
- * the function returns without performing the operation. It uses `vsnprintf` to format the 
+ * This function sends a formatted string over USART. If the DMA transfer is currently busy,
+ * the function returns without performing the operation. It uses `vsnprintf` to format the
  * string and then starts a DMA transfer to send the data.
  *
  * @param str The format string (similar to printf).
  * @param ... Additional arguments for formatting.
  */
-void usart_send_string(const char *str, ...) {
-    if (!(xSemaphoreTake(xUART, portMAX_DELAY) == pdTRUE)) { /* Check if the UART semaphore is available */
+void usart_send_string(const char* str, ...)
+{
+    if (!(xSemaphoreTake(xUART, portMAX_DELAY) == pdTRUE))
+    { /* Check if the UART semaphore is available */
         return;
     }
 
-    char formatted_buffer[TX_BUFFER_SIZE]; /* Buffer for formatted string */
-    va_list args; /* Variable argument list */
-    va_start(args, str); /* Initialize variable arguments */
+    char formatted_buffer[TX_BUFFER_SIZE];                                           /* Buffer for formatted string */
+    va_list args;                                                                    /* Variable argument list */
+    va_start(args, str);                                                             /* Initialize variable arguments */
     uint16_t len = vsnprintf(formatted_buffer, sizeof(formatted_buffer), str, args); /* Format the string */
-    va_end(args); /* End variable arguments */
+    va_end(args);                                                                    /* End variable arguments */
 
-    if (len < 0 || len >= TX_BUFFER_SIZE) { /* Check for errors in formatting */
+    if (len < 0 || len >= TX_BUFFER_SIZE)
+    { /* Check for errors in formatting */
         return;
     }
 
     memcpy(tx_buffer, formatted_buffer, len); /* Copy the formatted string to the TX buffer */
 
     dma_set_memory_address(DMA1, DMA_CHANNEL4, (uint32_t)tx_buffer); /* Set the memory address for DMA transfer */
-    dma_set_number_of_data(DMA1, DMA_CHANNEL4, len); /* Set the number of bytes to transfer */
- 
+    dma_set_number_of_data(DMA1, DMA_CHANNEL4, len);                 /* Set the number of bytes to transfer */
+
     dma_enable_channel(DMA1, DMA_CHANNEL4); /* Enable DMA channel 4 */
 }
 
@@ -310,30 +317,32 @@ void usart_send_string(const char *str, ...) {
 /**
  * @brief Task to control the temperature and manage the fan speed via PWM.
  *
- * This task continuously monitors the temperature, adjusts the PWM duty cycle 
- * for the fan, and sends notifications to close the door if the temperature is below 
+ * This task continuously monitors the temperature, adjusts the PWM duty cycle
+ * for the fan, and sends notifications to close the door if the temperature is below
  * a specified threshold.
  *
  * @param pvParameters Unused parameter for FreeRTOS task compatibility.
  */
-void temperature_control_task(void *pvParameters __attribute__((unused)))
+void temperature_control_task(void* pvParameters __attribute__((unused)))
 {
-    while(TRUE)    
+    while (TRUE)
     {
         temp_value = get_temp_value();
 
-        if(temp_value < TEMPERATURE_THRESHOLD)
+        if (temp_value < TEMPERATURE_THRESHOLD)
         {
             pwm_fan = TEMPERATURE_ZERO; /* Turn off fan*/
             /* Notify to close the door */
             xTaskNotifyGive(closeDoorTaskHandle);
         }
-        else{
+        else
+        {
             pwm_fan = temp_value; /* Set fan speed based on temperature */
         }
 
         usart_send_string("Temperatura actual: %d°C\r\n", temp_value); /* Send temperature via serial */
-        timer_set_oc_value(TIM4, TIM_OC4, TIMER_PERIOD - (TIMER_PERIOD * temp_value) / PERCENTAGE); /* Set PWM duty cycle */
+        timer_set_oc_value(
+            TIM4, TIM_OC4, TIMER_PERIOD - (TIMER_PERIOD * temp_value) / PERCENTAGE); /* Set PWM duty cycle */
 
         vTaskDelay(TWO_MINUTES_DELAY / portTICK_PERIOD_MS); /* Wait for two minutes between readings */
     }
@@ -342,44 +351,47 @@ void temperature_control_task(void *pvParameters __attribute__((unused)))
 /**
  * @brief Task to monitor and indicate battery level via PWM.
  *
- * This task reads the battery level, calculates the corresponding PWM duty cycle, 
+ * This task reads the battery level, calculates the corresponding PWM duty cycle,
  * and sends the battery percentage through the serial port.
  *
  * @param pvParameters Unused parameter for FreeRTOS task compatibility.
  */
-void battery_level_indicator_task(void *pvParameters __attribute__((unused)))
+void battery_level_indicator_task(void* pvParameters __attribute__((unused)))
 {
-    while(TRUE)
+    while (TRUE)
     {
-        duty_cycle = get_battery_value(); /* Get battery percentage */
+        duty_cycle = get_battery_value();                                 /* Get battery percentage */
         usart_send_string("Porcentaje de bateria: %d%%\r\n", duty_cycle); /* Send battery percentage via serial */
         uint32_t pwm_value = TIMER_PERIOD - (TIMER_PERIOD * duty_cycle) / PERCENTAGE;
         timer_set_oc_value(TIM4, TIM_OC3, pwm_value); /* Set PWM duty cycle */
-        
+
         vTaskDelay(ONE_MINUTE_DELAY / portTICK_PERIOD_MS); /* Wait for one minute between readings */
-    }    
+    }
 }
 
 /**
  * @brief Task to close the door when notified.
  *
- * This task waits for a notification to close the door, ensuring mutual exclusion 
+ * This task waits for a notification to close the door, ensuring mutual exclusion
  * with a semaphore. After closing the door, it stops the motor.
  *
  * @param pvParameters Parameter for FreeRTOS task compatibility.
  */
-void close_door_task(void *pvParameters __attribute__((unused)))
+void close_door_task(void* pvParameters __attribute__((unused)))
 {
     while (TRUE)
     {
         /* Wait for a notification */
-        if(ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0){
-            if(xSemaphoreTake(xDoor, portMAX_DELAY) == pdTRUE){
-                if(door_state == OPEN){
-                    door_state = CLOSED; /* Set door state to closed */
-                    close_door(); /* Close the door */
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0)
+        {
+            if (xSemaphoreTake(xDoor, portMAX_DELAY) == pdTRUE)
+            {
+                if (door_state == OPEN)
+                {
+                    door_state = CLOSED;                                /* Set door state to closed */
+                    close_door();                                       /* Close the door */
                     vTaskDelay(HALF_MINUTE_DELAY / portTICK_PERIOD_MS); /* Wait for door to close */
-                    stop_motor(); /* Stop the motor */
+                    stop_motor();                                       /* Stop the motor */
                 }
                 xSemaphoreGive(xDoor); /* Release the semaphore */
             }
@@ -390,23 +402,26 @@ void close_door_task(void *pvParameters __attribute__((unused)))
 /**
  * @brief Task to open the door when notified.
  *
- * This task waits for a notification to open the door, ensuring mutual exclusion 
+ * This task waits for a notification to open the door, ensuring mutual exclusion
  * with a semaphore. After opening the door, it stops the motor.
  *
  * @param pvParameters Parameter for FreeRTOS task compatibility.
  */
-void open_door_task(void *pvParameters __attribute__((unused)))
+void open_door_task(void* pvParameters __attribute__((unused)))
 {
     while (TRUE)
     {
         /* Wait for a notification */
-        if(ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0){
-            if(xSemaphoreTake(xDoor, portMAX_DELAY) == pdTRUE){
-                if(door_state == CLOSED){
-                    door_state = OPEN; /* Set door state to open */
-                    open_door(); /* Open the door */
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0)
+        {
+            if (xSemaphoreTake(xDoor, portMAX_DELAY) == pdTRUE)
+            {
+                if (door_state == CLOSED)
+                {
+                    door_state = OPEN;                                  /* Set door state to open */
+                    open_door();                                        /* Open the door */
                     vTaskDelay(HALF_MINUTE_DELAY / portTICK_PERIOD_MS); /* Wait for door to open */
-                    stop_motor(); /* Stop the motor */
+                    stop_motor();                                       /* Stop the motor */
                 }
                 xSemaphoreGive(xDoor); /* Release the semaphore */
             }
@@ -416,53 +431,63 @@ void open_door_task(void *pvParameters __attribute__((unused)))
 
 /**
  * @brief Application hook function for stack overflow handling.
- * 
- * This function is called when a stack overflow occurs in any task. It 
- * enters an infinite loop, halting further execution. It is used to 
+ *
+ * This function is called when a stack overflow occurs in any task. It
+ * enters an infinite loop, halting further execution. It is used to
  * debug stack overflow issues.
- * 
+ *
  * @param pxTask Handle to the task that caused the overflow (unused).
  * @param pcTaskName Name of the task that caused the overflow (unused).
  */
-void vApplicationStackOverflowHook(TaskHandle_t pxTask __attribute__((unused)), char *pcTaskName __attribute__((unused))) {
-    while(TRUE);  /**< Infinite loop to halt the system on stack overflow */
+void vApplicationStackOverflowHook(TaskHandle_t pxTask __attribute__((unused)),
+                                   char* pcTaskName __attribute__((unused)))
+{
+    while (TRUE)
+        ; /**< Infinite loop to halt the system on stack overflow */
 }
 
 /**
  * @brief Configures binary semaphores for ADC and door control.
- * 
+ *
  * This function creates two binary semaphores used for synchronization:
- * one for controlling ADC access (`xADC`) and one for controlling door 
- * operations (`xDoor`). If the semaphores cannot be created, it enters 
+ * one for controlling ADC access (`xADC`) and one for controlling door
+ * operations (`xDoor`). If the semaphores cannot be created, it enters
  * an infinite loop and sends an error message over USART.
  */
-void config_semaphore(void){
+void config_semaphore(void)
+{
     // Create a binary semaphore for ADC access
     xADC = xSemaphoreCreateBinary();
-    if(xADC == NULL){
-        while(TRUE){  /**< Infinite loop in case of semaphore creation failure */
-            usart_send_string("ERROR");  /**< Send error message if semaphore creation fails */
+    if (xADC == NULL)
+    {
+        while (TRUE)
+        {                               /**< Infinite loop in case of semaphore creation failure */
+            usart_send_string("ERROR"); /**< Send error message if semaphore creation fails */
         }
     }
-    xSemaphoreGive(xADC);  /**< Release the semaphore to allow ADC access */
+    xSemaphoreGive(xADC); /**< Release the semaphore to allow ADC access */
 
     // Create a binary semaphore for door control
     xDoor = xSemaphoreCreateBinary();
-    if(xDoor == NULL){
-        while(TRUE){  /**< Infinite loop in case of semaphore creation failure */
-            usart_send_string("ERROR");  /**< Send error message if semaphore creation fails */
+    if (xDoor == NULL)
+    {
+        while (TRUE)
+        {                               /**< Infinite loop in case of semaphore creation failure */
+            usart_send_string("ERROR"); /**< Send error message if semaphore creation fails */
         }
     }
-    xSemaphoreGive(xDoor);  /**< Release the semaphore to allow door control */
+    xSemaphoreGive(xDoor); /**< Release the semaphore to allow door control */
 
     // Create a binary semaphore for UART access
-    xUART = xSemaphoreCreateBinary(); 
-    if(xUART == NULL){
-        while(TRUE){  /**< Infinite loop in case of semaphore creation failure */
-            usart_send_string("ERROR");  /**< Send error message if semaphore creation fails */
+    xUART = xSemaphoreCreateBinary();
+    if (xUART == NULL)
+    {
+        while (TRUE)
+        {                               /**< Infinite loop in case of semaphore creation failure */
+            usart_send_string("ERROR"); /**< Send error message if semaphore creation fails */
         }
     }
-    xSemaphoreGive(xUART);  /**< Release the semaphore to allow UART access */
+    xSemaphoreGive(xUART); /**< Release the semaphore to allow UART access */
 }
 
 /* --------------------- Interrupt service routines -------------------------- */
@@ -475,21 +500,23 @@ void config_semaphore(void){
  * - Disables the DMA channel to prevent further transfers.
  * - Gives the xUART semaphore to indicate the transfer is complete.
  */
-void dma1_channel4_isr(void) {
-    if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL4, DMA_TCIF)) {
+void dma1_channel4_isr(void)
+{
+    if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL4, DMA_TCIF))
+    {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL4, DMA_TCIF); /* Clear transfer complete flag. */
-        dma_disable_channel(DMA1, DMA_CHANNEL4); /* Disable DMA1 Channel 4. */
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;  /* Task notification not required. */
+        dma_disable_channel(DMA1, DMA_CHANNEL4);                 /* Disable DMA1 Channel 4. */
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;           /* Task notification not required. */
         xSemaphoreGiveFromISR(xUART, &xHigherPriorityTaskWoken); /* Give the UART semaphore. */
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken); /* Switch to higher priority task if required. */
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);            /* Switch to higher priority task if required. */
     }
 }
 
 /**
  * @brief ISR for EXTI0 interrupt (door control based on edge detection).
  *
- * This ISR toggles between opening and closing the door based on the 
- * edge detection state (falling or rising). It notifies the appropriate 
+ * This ISR toggles between opening and closing the door based on the
+ * edge detection state (falling or rising). It notifies the appropriate
  * FreeRTOS task.
  */
 void exti0_isr(void)
@@ -501,7 +528,7 @@ void exti0_isr(void)
     if (!(gpio_get(SWITCH_PORT, SWITCH_PIN)))
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        
+
         /* Notify the task to close the door */
         vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -509,18 +536,17 @@ void exti0_isr(void)
     else
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        
+
         /* Notify the task to open the door */
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
     }
 }
 
 /**
  * @brief ISR for EXTI1 interrupt (manual control toggle).
  *
- * Toggles between enabling or disabling manual controls. This is communicated 
+ * Toggles between enabling or disabling manual controls. This is communicated
  * via USART messages and updates the NVIC interrupt configuration.
  */
 void exti1_isr(void)
@@ -533,8 +559,8 @@ void exti1_isr(void)
     {
         /* Disable EXTI0 interrupt and enable EXTI2, EXTI3 */
         nvic_disable_irq(NVIC_EXTI0_IRQ); // Disable manual controls
-        nvic_enable_irq(NVIC_EXTI2_IRQ); // Enable motion based controls
-        nvic_enable_irq(NVIC_EXTI3_IRQ); // Enable fire based controls
+        nvic_enable_irq(NVIC_EXTI2_IRQ);  // Enable motion based controls
+        nvic_enable_irq(NVIC_EXTI3_IRQ);  // Enable fire based controls
 
         /* Notify manual controls deactivation */
         usart_send_string("Controles manuales desactivados\r\n");
@@ -542,21 +568,20 @@ void exti1_isr(void)
     else
     {
         /* Enable EXTI0 interrupt and disable EXTI2, EXTI3 */
-        nvic_enable_irq(NVIC_EXTI0_IRQ); // Enable manual controls
+        nvic_enable_irq(NVIC_EXTI0_IRQ);  // Enable manual controls
         nvic_disable_irq(NVIC_EXTI2_IRQ); // Disable automatic controls
         nvic_disable_irq(NVIC_EXTI3_IRQ);
 
         /* Notify manual controls activation */
         usart_send_string("Controles manuales activados\r\n");
-
     }
 }
 
 /**
  * @brief ISR for EXTI2 interrupt (safe zone detection).
  *
- * This ISR handles the detection of safe zones, notifying the 
- * appropriate FreeRTOS task. The door opens or closes depending on 
+ * This ISR handles the detection of safe zones, notifying the
+ * appropriate FreeRTOS task. The door opens or closes depending on
  * the detection, and a message is sent via USART to indicate the zone state.
  */
 void exti2_isr(void)
@@ -568,15 +593,14 @@ void exti2_isr(void)
     if (!gpio_get(MOTION_SENSOR_PORT, MOTION_SENSOR_PIN))
     {
         /* Notify the safe zone detection and open the door */
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
     }
     else
     {
         /* Notify the danger zone and close the door */
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
@@ -585,7 +609,7 @@ void exti2_isr(void)
 /**
  * @brief ISR for EXTI3 interrupt (fire detection and alarm activation).
  *
- * Handles fire detection via an interrupt, notifying the appropriate task 
+ * Handles fire detection via an interrupt, notifying the appropriate task
  * to open or close the door. It also triggers the alarm.
  */
 void exti3_isr(void)
@@ -594,12 +618,12 @@ void exti3_isr(void)
     exti_reset_request(EXTI3);
 
     /* Check if the interrupt is the fire sensor pin is at a low state */
-    if(!gpio_get(FIRE_SENSOR_PORT, FIRE_SENSOR_PIN))
+    if (!gpio_get(FIRE_SENSOR_PORT, FIRE_SENSOR_PIN))
     {
         /* Deactivate the alarm */
         gpio_set(ALARM_PORT, ALARM_PIN); /* Turn off the alarm on rising edge */
 
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
@@ -608,7 +632,7 @@ void exti3_isr(void)
         /* Reactivate the alarm */
         gpio_clear(ALARM_PORT, ALARM_PIN);
 
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
@@ -616,13 +640,13 @@ void exti3_isr(void)
 
 /**
  * @brief Main function that initializes the system and starts the scheduler.
- * 
- * This function sets up the system clock, GPIO pins, EXTI for interrupt handling, 
+ *
+ * This function sets up the system clock, GPIO pins, EXTI for interrupt handling,
  * ADC, USART, PWM, DMA, and semaphores. It then creates tasks for controlling
- * temperature, battery level, and door operations. Finally, it starts the FreeRTOS 
+ * temperature, battery level, and door operations. Finally, it starts the FreeRTOS
  * scheduler, which manages the tasks.
- * 
- * @return int 0 if program execution completes successfully (it shouldn't, since 
+ *
+ * @return int 0 if program execution completes successfully (it shouldn't, since
  * the program relies on the FreeRTOS scheduler).
  */
 int main(void)
@@ -646,17 +670,29 @@ int main(void)
     nvic_set_priority(NVIC_EXTI3_IRQ, EXTI3_IRQ_PRIORITY); /**< Set EXTI3 interrupt priority */
 
     // Task creation for different functionalities
-    xTaskCreate(temperature_control_task, TEMPERATURE_CONTROL_TASK_NAME, TEMPERATURE_CONTROL_STACK_SIZE, NULL, TEMPERATURE_CONTROL_PRIORITY, NULL);
-    xTaskCreate(battery_level_indicator_task, BATTERY_LEVEL_INDICATOR_TASK_NAME, BATTERY_LEVEL_INDICATOR_STACK_SIZE, NULL, BATTERY_CONTROL_PRIORITY, NULL);
-    xTaskCreate(close_door_task, CLOSE_DOOR_TASK_NAME, CLOSE_DOOR_STACK_SIZE, NULL, CLOSE_DOOR_PRIORITY, &closeDoorTaskHandle);
-    xTaskCreate(open_door_task, OPEN_DOOR_TASK_NAME, OPEN_DOOR_STACK_SIZE, NULL, OPEN_DOOR_PRIORITY, &openDoorTaskHandle);
+    xTaskCreate(temperature_control_task,
+                TEMPERATURE_CONTROL_TASK_NAME,
+                TEMPERATURE_CONTROL_STACK_SIZE,
+                NULL,
+                TEMPERATURE_CONTROL_PRIORITY,
+                NULL);
+    xTaskCreate(battery_level_indicator_task,
+                BATTERY_LEVEL_INDICATOR_TASK_NAME,
+                BATTERY_LEVEL_INDICATOR_STACK_SIZE,
+                NULL,
+                BATTERY_CONTROL_PRIORITY,
+                NULL);
+    xTaskCreate(
+        close_door_task, CLOSE_DOOR_TASK_NAME, CLOSE_DOOR_STACK_SIZE, NULL, CLOSE_DOOR_PRIORITY, &closeDoorTaskHandle);
+    xTaskCreate(
+        open_door_task, OPEN_DOOR_TASK_NAME, OPEN_DOOR_STACK_SIZE, NULL, OPEN_DOOR_PRIORITY, &openDoorTaskHandle);
 
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
 
     // Main loop (in this case, the program relies on interrupts for operation)
     while (TRUE)
-    {  
+    {
         // The main loop does nothing since tasks and interrupts handle the operation
     }
 

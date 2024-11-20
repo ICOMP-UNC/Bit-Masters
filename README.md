@@ -13,6 +13,6 @@ This project is designed to be the control system for a shelter door in an apoca
 
 The repository includes a **Wiki** with detailed documentation on how the project works, its components, and its configuration. 
 
-- **[Installation Manual](Install.md)**: A step-by-step guide to installing the project.
+- **[Installation Manual](INSTALL.md)**: A step-by-step guide to installing the project.
 - **[Hardware Connection Manual](hardware-setup.md)**: Instructions on how to connect the hardware components to the system.
 - **[Functionality Video](link_to_video.md)**: A video demonstrating how the system operates and interacts with the sensors and indicators.

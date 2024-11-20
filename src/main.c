@@ -1,10 +1,3 @@
-/*
- * @file main.c
- * @brief Toggles the LED on PC13 using a SysTick timer and EXTI0 interrupt.
- * Enable GPIO interrupt on PA0 to toggle the LED state on both rising and falling edges.
- * The onboard LED (connected to PC13 on STM32F103C8T6 Blue Pill) will blink using SysTick and toggle using EXTI0.
- * This file is based on examples from the libopencm3 project.
- */
 
 /**
  * @file main.c
@@ -14,9 +7,6 @@
  * FreeRTOS tasks for controlling various components like a motor, door, and sensors.
  * The system uses ADC to monitor battery levels and temperature, and EXTI interrupts 
  * for detecting button presses and sensor inputs.
- *
- * @author [Your Name]
- * @date [Current Date]
  */
 
 #include <libopencm3/cm3/nvic.h>
@@ -143,11 +133,6 @@
  * @brief Transmission buffer size for DMA
  */
 #define TX_BUFFER_SIZE 128  /**< Buffer size for USART transmission via DMA */
-
-/** 
- * @brief Delay time for one minute in milliseconds
- */
-#define ONE_MINUTE_DELAY 60000 /**< 60000 ms */
 
 /* Task names */
 
@@ -287,7 +272,7 @@
 /** 
  * @brief Define for the conversion factor to scale ADC value to temperature (example for 30°C range)
  */
-#define TEMP_CONVERSION_FACTOR      30                /**< Conversion factor for temperature calculation */
+#define TEMP_CONVERSION_FACTOR      240                /**< Conversion factor for temperature calculation */
 
 /**
  * @brief Baud rate for UART communication.
@@ -337,7 +322,7 @@
 /**
  * @brief Delay for one minute in milliseconds.
  */
-#define ONE_MINUTE_DELAY 1000
+#define ONE_MINUTE_DELAY 10000
 
 /**
  * @brief Delay for two minutes in milliseconds.
@@ -463,6 +448,11 @@ static uint16_t adc_data = 0; /**< ADC data buffer */
  */
 static door_state = OPEN; /**< Door state */
 
+/**
+ * @brief PWM value for fan control
+ */
+static pwm_fan = 0; /**< PWM value for fan control */
+
 /* FreeRTOS Semaphore Handles */
 
 /**
@@ -561,22 +551,22 @@ void exti_setup(void)
 
     /* Configure EXTI0 (PA0) for falling edge initially */
     exti_select_source(EXTI0, SWITCH_PORT);        /* Set PA0 as the EXTI0 source */
-    exti_set_trigger(EXTI0, EXTI_TRIGGER_FALLING); /* Trigger interrupt on falling edge */
+    exti_set_trigger(EXTI0, EXTI_TRIGGER_BOTH); /* Trigger interrupt on falling edge */
     exti_enable_request(EXTI0);                    /* Enable EXTI0 interrupt */
 
     /* Configure EXTI1 (PA1) for falling edge initially */
-    exti_select_source(EXTI1, SWITCH_PORT);        /* Set PA1 as the EXTI1 source */
-    exti_set_trigger(EXTI1, EXTI_TRIGGER_FALLING); /* Trigger interrupt on falling edge */
+    exti_select_source(EXTI1, OVERRIDE_PORT);        /* Set PA1 as the EXTI1 source */
+    exti_set_trigger(EXTI1, EXTI_TRIGGER_BOTH); /* Trigger interrupt on falling edge */
     exti_enable_request(EXTI1);                    /* Enable EXTI1 interrupt */
 
     /* Configure EXTI2 (PA2) for falling edge initially */
-    exti_select_source(EXTI2, SWITCH_PORT);        /* Set PA2 as the EXTI2 source */
-    exti_set_trigger(EXTI2, EXTI_TRIGGER_FALLING); /* Trigger interrupt on falling edge */
+    exti_select_source(EXTI2, MOTION_SENSOR_PORT);        /* Set PA2 as the EXTI2 source */
+    exti_set_trigger(EXTI2, EXTI_TRIGGER_BOTH); /* Trigger interrupt on falling edge */
     exti_enable_request(EXTI2);                    /* Enable EXTI2 interrupt */
 
-    /* Configure EXTI3 (PA3) for falling edge initially */
-    exti_select_source(EXTI3, SWITCH_PORT);        /* Set PA3 as the EXTI3 source */
-    exti_set_trigger(EXTI3, EXTI_TRIGGER_FALLING); /* Trigger interrupt on falling edge */
+    /* Configure EXTI3 (PA3) for risign edge initially */
+    exti_select_source(EXTI3, FIRE_SENSOR_PORT);        /* Set PA3 as the EXTI3 source */
+    exti_set_trigger(EXTI3, EXTI_TRIGGER_BOTH); /* Trigger interrupt on rising edge */
     exti_enable_request(EXTI3);                    /* Enable EXTI3 interrupt */
 }
 
@@ -869,7 +859,7 @@ void usart_send_string(const char *str, ...) {
 void close_door(void) {
     gpio_set(MOTOR_NEG_PORT, MOTOR_NEG_PIN); /**< Activate motor for closing. */
     gpio_clear(MOTOR_POS_PORT, MOTOR_POS_PIN); /**< Deactivate motor in opening direction. */
-    usart_send_string("Cerrando puerta\r\n");
+    //usart_send_string("Cerrando puerta\r\n");
 }
 
 /**
@@ -881,7 +871,7 @@ void close_door(void) {
 void open_door(void) {
     gpio_clear(MOTOR_NEG_PORT, MOTOR_NEG_PIN); /**< Deactivate motor in closing direction. */
     gpio_set(MOTOR_POS_PORT, MOTOR_POS_PIN); /**< Activate motor for opening. */
-    usart_send_string("Abriendo puerta\r\n");
+    //usart_send_string("Abriendo puerta\r\n");
 }
 
 /**
@@ -911,13 +901,16 @@ void temperature_control_task(void *pvParameters __attribute__((unused)))
 
         if(temp_value < TEMPERATURE_THRESHOLD)
         {
-            temp_value = TEMPERATURE_ZERO; /* Turn off fan*/
+            pwm_fan = TEMPERATURE_ZERO; /* Turn off fan*/
             /* Notify to close the door */
             xTaskNotifyGive(closeDoorTaskHandle);
         }
+        else{
+            pwm_fan = temp_value; /* Set fan speed based on temperature */
+        }
 
         usart_send_string("Temperatura actual: %d°C\r\n", temp_value); /* Send temperature via serial */
-        timer_set_oc_value(TIM4, TIM_OC4, TIMER_PERIOD - (TIMER_PERIOD * temp_value) / TEMP_CONVERSION_FACTOR); /* Set PWM duty cycle */
+        timer_set_oc_value(TIM4, TIM_OC4, TIMER_PERIOD - (TIMER_PERIOD * temp_value) / PERCENTAGE); /* Set PWM duty cycle */
 
         vTaskDelay(TWO_MINUTES_DELAY / portTICK_PERIOD_MS); /* Wait for two minutes between readings */
     }
@@ -1013,17 +1006,13 @@ void exti0_isr(void)
     exti_reset_request(EXTI0);
 
     /* Check if the interrupt is due to falling edge */
-    if (exti_direction_0 == FALLING)
+    if (!(gpio_get(SWITCH_PORT, SWITCH_PIN)))
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         
         /* Notify the task to close the door */
         vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-        /* Switch to rising edge detection */
-        exti_direction_0 = RISING;
-        exti_set_trigger(EXTI0, EXTI_TRIGGER_RISING);
     }
     else
     {
@@ -1033,9 +1022,6 @@ void exti0_isr(void)
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
-        /* Switch to falling edge detection */
-        exti_direction_0 = FALLING;
-        exti_set_trigger(EXTI0, EXTI_TRIGGER_FALLING);
     }
 }
 
@@ -1052,7 +1038,7 @@ void exti1_isr(void)
     exti_reset_request(EXTI1);
 
     /* Check if the interrupt is due to falling edge */
-    if (exti_direction_1 == FALLING)
+    if (!(gpio_get(OVERRIDE_PORT, OVERRIDE_PIN)))
     {
         /* Disable EXTI0 interrupt and enable EXTI2, EXTI3 */
         nvic_disable_irq(NVIC_EXTI0_IRQ);
@@ -1061,10 +1047,6 @@ void exti1_isr(void)
 
         /* Notify manual controls deactivation */
         usart_send_string("Controles manuales desactivados\r\n");
-
-        /* Switch to rising edge detection */
-        exti_direction_1 = RISING;
-        exti_set_trigger(EXTI0, EXTI_TRIGGER_RISING);
     }
     else
     {
@@ -1076,9 +1058,6 @@ void exti1_isr(void)
         /* Notify manual controls activation */
         usart_send_string("Controles manuales activados\r\n");
 
-        /* Switch to falling edge detection */
-        exti_direction_1 = FALLING;
-        exti_set_trigger(EXTI0, EXTI_TRIGGER_FALLING);
     }
 }
 
@@ -1095,29 +1074,20 @@ void exti2_isr(void)
     exti_reset_request(EXTI2);
 
     /* Check if the interrupt is due to falling edge */
-    if (exti_direction_2 == FALLING)
+    if (!gpio_get(MOTION_SENSOR_PORT, MOTION_SENSOR_PIN))
     {
         /* Notify the safe zone detection and open the door */
-        usart_send_string("Zona asegurada\r\n");
         BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-        
-        /* Switch to rising edge detection */
-        exti_direction_2 = RISING;
-        exti_set_trigger(EXTI2, EXTI_TRIGGER_RISING);
+
     }
     else
     {
         /* Notify the danger zone and close the door */
-        usart_send_string("Zombies cerca\r\n");
         BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
         vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-        /* Switch to falling edge detection */
-        exti_direction_2 = FALLING;
-        exti_set_trigger(EXTI2, EXTI_TRIGGER_FALLING);
     }
 }
 
@@ -1134,39 +1104,39 @@ void exti3_isr(void)
     exti_reset_request(EXTI3);
 
     /* Check if the interrupt is due to falling edge */
-    if (exti_direction_3 == FALLING)
+    if(!gpio_get(FIRE_SENSOR_PORT, FIRE_SENSOR_PIN))
     {
-        /* Deactivate the alarm LED */
+        /* Deactivate the alarm */
+        gpio_set(ALARM_PORT, ALARM_PIN); /* Turn off the alarm on rising edge */
+
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
+        vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+        /* Switch to rising edge detection */
+        //exti_direction_3 = RISING;
+        //exti_set_trigger(EXTI3, EXTI_TRIGGER_RISING);
+
+        /* Send fire detection messages */
+        //usart_send_string("Fuego controlado\r\n");
+        //usart_send_string("Activando alarma...\r\n");
+    }
+    else
+    {
+        /* Reactivate the alarm */
         gpio_clear(ALARM_PORT, ALARM_PIN);
 
         BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
         vTaskNotifyGiveFromISR(openDoorTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 
-        /* Switch to rising edge detection */
-        exti_direction_3 = RISING;
-        exti_set_trigger(EXTI3, EXTI_TRIGGER_RISING);
-
-        /* Send fire detection messages */
-        usart_send_string("Fuego detectado!!!!\r\n");
-        usart_send_string("Activando alarma...\r\n");
-    }
-    else
-    {
-        /* Reactivate the alarm LED */
-        gpio_set(ALARM_PORT, ALARM_PIN); /* Turn off LED on rising edge */
-
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
-        vTaskNotifyGiveFromISR(closeDoorTaskHandle, &xHigherPriorityTaskWoken);
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
         /* Switch to falling edge detection */
-        exti_direction_3 = FALLING;
-        exti_set_trigger(EXTI3, EXTI_TRIGGER_FALLING);
+        //exti_direction_3 = FALLING;
+        //exti_set_trigger(EXTI3, EXTI_TRIGGER_FALLING);
 
         /* Send fire controlled messages */
-        usart_send_string("Fuego controlado\r\n");
-        usart_send_string("Desactivando alarma\r\n");
+        //usart_send_string("Fuego detectado\n");
+        //usart_send_string("Desactivando alarma\r\n");
     }
 }
 

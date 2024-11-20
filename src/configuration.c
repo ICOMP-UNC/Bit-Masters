@@ -1,5 +1,5 @@
 /**
- * @file system_configuration.c
+ * @file configuration.c
  * @brief System initialization and configuration functions.
  *
  * This file contains functions to initialize and configure various system

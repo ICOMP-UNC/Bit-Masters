@@ -29,9 +29,13 @@
 #define TX_BUFFER_SIZE 128 /**< Buffer size for USART transmission via DMA */
 
 /**
- * @brief Door states: CLOSED or OPEN
+ * @brief Door state CLOSED
  */
 #define CLOSED 1
+
+/**
+ * @brief Door state OPEN
+ */
 #define OPEN   0
 
 /**
@@ -320,8 +324,6 @@ void usart_send_string(const char* str, ...)
  * This task continuously monitors the temperature, adjusts the PWM duty cycle
  * for the fan, and sends notifications to close the door if the temperature is below
  * a specified threshold.
- *
- * @param pvParameters Unused parameter for FreeRTOS task compatibility.
  */
 void temperature_control_task(void* pvParameters __attribute__((unused)))
 {
@@ -353,8 +355,6 @@ void temperature_control_task(void* pvParameters __attribute__((unused)))
  *
  * This task reads the battery level, calculates the corresponding PWM duty cycle,
  * and sends the battery percentage through the serial port.
- *
- * @param pvParameters Unused parameter for FreeRTOS task compatibility.
  */
 void battery_level_indicator_task(void* pvParameters __attribute__((unused)))
 {
@@ -374,8 +374,6 @@ void battery_level_indicator_task(void* pvParameters __attribute__((unused)))
  *
  * This task waits for a notification to close the door, ensuring mutual exclusion
  * with a semaphore. After closing the door, it stops the motor.
- *
- * @param pvParameters Parameter for FreeRTOS task compatibility.
  */
 void close_door_task(void* pvParameters __attribute__((unused)))
 {
@@ -404,8 +402,6 @@ void close_door_task(void* pvParameters __attribute__((unused)))
  *
  * This task waits for a notification to open the door, ensuring mutual exclusion
  * with a semaphore. After opening the door, it stops the motor.
- *
- * @param pvParameters Parameter for FreeRTOS task compatibility.
  */
 void open_door_task(void* pvParameters __attribute__((unused)))
 {
@@ -435,9 +431,6 @@ void open_door_task(void* pvParameters __attribute__((unused)))
  * This function is called when a stack overflow occurs in any task. It
  * enters an infinite loop, halting further execution. It is used to
  * debug stack overflow issues.
- *
- * @param pxTask Handle to the task that caused the overflow (unused).
- * @param pcTaskName Name of the task that caused the overflow (unused).
  */
 void vApplicationStackOverflowHook(TaskHandle_t pxTask __attribute__((unused)),
                                    char* pcTaskName __attribute__((unused)))

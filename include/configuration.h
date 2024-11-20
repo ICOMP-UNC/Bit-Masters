@@ -157,8 +157,9 @@
  * Defines the total stack size used by the temperature control task, which includes the minimum
  * stack size plus an additional 100 bytes.
  */
-#define TEMPERATURE_CONTROL_STACK_SIZE (configMINIMAL_STACK_SIZE + 100) /**< Stack size for temperature control task   \
-                                                                         */
+#define TEMPERATURE_CONTROL_STACK_SIZE                                                                                 \
+    (configMINIMAL_STACK_SIZE + 100) /**< Stack size for temperature control task                                      \
+                                      */
 
 /**
  * @brief Stack size for the battery level indicator task.

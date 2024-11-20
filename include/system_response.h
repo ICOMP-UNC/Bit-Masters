@@ -1,6 +1,6 @@
 #pragma once
 
-#include "configuration.h" /*<< Includes system configuration and hardware definitions. */ 
+#include "configuration.h" /*<< Includes system configuration and hardware definitions. */
 
 /**
  * @brief Closes the door by activating the motor in the closing direction.

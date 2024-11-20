@@ -1,215 +1,401 @@
-/**
- * @file configuration.h
- * @brief Configuration header file
- * 
- */
 #pragma once
 
-#include <libopencm3/stm32/gpio.h> /**< Include the GPIO peripheral library */
-#include <libopencm3/stm32/rcc.h> /**< Include the RCC peripheral library */
-#include <libopencm3/stm32/exti.h> /**< Include the EXTI peripheral library */
-#include <libopencm3/cm3/nvic.h> /**< Include the NVIC peripheral library */
-#include <libopencm3/stm32/timer.h> /**< Include the timer peripheral library */
-#include <libopencm3/stm32/i2c.h> /**< Include the I2C library */
-#include <libopencm3/stm32/adc.h> /**< Include the adc peripheral library */
+// libopencm3
+#include <libopencm3/cm3/nvic.h> /**< NVIC (Nested Vectored Interrupt Controller) library for managing interrupt priority and enabling interrupts. */
+#include <libopencm3/cm3/systick.h> /**< Systick (System Tick Timer) library for setting up and managing system timer interrupts. */
+#include <libopencm3/stm32/adc.h> /**< ADC (Analog-to-Digital Converter) library for configuring and using ADCs to sample analog signals. */
+#include <libopencm3/stm32/dma.h> /**< DMA (Direct Memory Access) library for managing data transfers between peripherals and memory. */
+#include <libopencm3/stm32/exti.h> /**< EXTI (External Interrupt) library for handling external interrupt lines and events. */
+#include <libopencm3/stm32/gpio.h> /**< GPIO (General Purpose Input/Output) library for configuring and controlling the GPIO pins. */
+#include <libopencm3/stm32/rcc.h> /**< RCC (Reset and Clock Control) library for managing system clocks and peripheral clocks. */
+#include <libopencm3/stm32/timer.h> /**< Timer library for configuring and controlling timers for time-based events or PWM generation. */
+#include <libopencm3/stm32/usart.h> /**< USART (Universal Synchronous Asynchronous Receiver-Transmitter) library for serial communication. */
 
-// Free RTOS headers
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
+#include <stdarg.h> /**< Standard library for handling variable arguments in functions (e.g., va_list, va_start, va_end). */
+#include <stdio.h> /**< Standard Input/Output library for functions like printf, scanf, etc. */
 
-#define ALARM_PORT GPIOA /**< Alarm port corresponds to port A */
-#define ALARM_PIN GPIO5 /**< Define the alarm pin as PA5 */
+// FreeRTOS headers
+#include "FreeRTOS.h" /**< FreeRTOS core header file, provides the main API for task management and kernel functions. */
+#include "semphr.h"   /**< FreeRTOS header for semaphore management, used for synchronization between tasks. */
+#include "task.h"     /**< FreeRTOS header for task management, including task creation, deletion, and scheduling. */
 
-#define MANUAL_SWITCH_PORT GPIOA /**< Manual switch port corresponds to port A */
-#define MANUAL_SWITCH_PIN GPIO6 /**< Define the manual switch pin as PA6 */
-
-#define OVERRIDE_SWITCH_PORT GPIOA /**< Override switch port corresponds to port A */
-#define OVERRIDE_SWITCH_PIN GPIO7 /**< Define the override switch pin as PA7 */
-
-#define LED_PORT GPIOA /**< LED port corresponds to port A */
-#define LED_PIN GPIO8 /**< Define the LED pin as PA10 */
-
-#define FAN_PORT GPIOA /**< Fan port corresponds to port A */
-#define FAN_PIN GPIO9 /**< Define the fan pin as PA9 */
-
-#define MOTOR_POS_PORT GPIOA /**< Positive motor port corresponds to port A */
-#define MOTOR_POS_PIN GPIO10 /**< Define the motor pin as P10 */
-
-#define MOTOR_NEG_PORT GPIOA /**< Negative motor port corresponds to port A */
-#define MOTOR_NEG_PIN GPIO11 /**< Define the motor pin as PA11 */
-
-#define TEMP_SENSOR_PORT GPIOA /**< Temperature sensor port corresponds to port A */
-#define TEMP_SENSOR_PIN GPIO0 /**< Define the temperature sensor pin as PA0 */
-
-#define BATTERY_LEVEL_PORT GPIOA /**< Battery level port corresponds to port A */
-#define BATTERY_LEVEL_PIN GPIO1 /**< Define the battery level pin as PA1 */
-
-#define MOTION_SENSOR_PORT GPIOA /**< Motion sensor port corresponds to port A */
-#define MOTION_SENSOR_PIN GPIO2 /**< Define the motion sensor pin as PA2 */
-
-#define INFRARED_SENSOR_PORT GPIOA /**< Infrared sensor port corresponds to port A */
-#define INFRARED_SENSOR_PIN GPIO3 /**< Define the infrared sensor pin as PA3 */
-
-#define ADC_CHANNEL_TEMP_SENSOR ((uint8_t) 0) /**< Timer uses ADC channel 0 */
-#define ADC_CHANNEL_BATTERY_LEVEL ((uint8_t) 1) /**< Timer uses ADC channel 1 */
-  
-/**
- * @brief I2C1 rise time in standard mode (100 kHz).
- * 
- * This define sets the maximum rise time for the I2C1 peripheral in 
- * standard mode (100 kHz) according to the I2C specifications. Adjust 
- * if the system clock changes.
- */
-#define I2C1_TRISE_100KHZ 36
+/* Constants */
 
 /**
- * @brief I2C1 CCR value for 100 kHz.
- * 
- * This define configures the Clock Control Register (CCR) of the 
- * I2C1 peripheral for standard mode at a frequency of 100 kHz. 
- * Adjust if a different speed is required.
+ * @brief Define for logical TRUE
  */
-#define I2C1_CCR_100KHZ 180
+#define TRUE 1
 
 /**
- * @brief I2C CR2 frequency setting for 36 MHz system clock.
- * 
- * This define sets the frequency for the I2C peripheral in the CR2 register 
- * when the system clock is 36 MHz. The value corresponds to the system clock 
- * frequency used to set the I2C communication speed. 
- * Adjust the value according to the actual system clock frequency.
+ * @brief Define for logical FALSE
  */
-#define I2C_CR2_FREQ_36MHZ  36
-
-#define PRESCALER_VALUE 71999 /**< Define the prescaler value for the timer */
-/* Calculate it as follows: (timer_clock / desired_frequency) - 1
- * 78MHz / (10000) - 1 */
-
-#define TIMER_PERIOD 0xFFFF /**< Full period of the timer */
-  
-/**
- * @brief Defines the boolean value TRUE as 1.
- * 
- * This macro is used to represent a boolean value of "true". It can be used in 
- * logical conditions where a true value is needed. In this case, TRUE is defined 
- * as 1 to follow the common convention of representing true with a non-zero value.
- * 
- * Example usage:
- * @code
- * if (condition == TRUE) {
- *     // Do something
- * }
- * @endcode
- */
-#define TRUE    1
+#define FALSE 0
 
 /**
- * @brief Defines the value SUCCESS as 1.
- * 
- * This macro is used to represent a successful operation or return value. It is 
- * commonly used to indicate that a function or operation completed successfully.
- * In this case, SUCCESS is defined as 1 to standardize return values indicating success.
- * 
- * Example usage:
- * @code
- * int function()
- * {    
- *      // If everything worked fine
- *      return SUCCESS;
- * }
- * @endcode
+ * @brief Define for falling edge detection
  */
-#define SUCCESS 1
+#define FALLING 0
 
-#define HEALTHY_TEMPERATURE            24  /**< Healthy ambient temperature */
-#define TEMPERATURE_THRESHOLD_LOW      27  /**< Temperature threshold to start fan at low speed. */
-#define TEMPERATURE_THRESHOLD_MEDIUM   30  /**< Temperature threshold to set fan at medium speed. */
-#define TEMPERATURE_THRESHOLD_HIGH     35  /**< Temperature threshold to set fan at high speed. */
+/**
+ * @brief Define for rising edge detection
+ */
+#define RISING 1
 
-#define DUTY_CYCLE_OFF                 0   /**< Duty cycle when fan is off (below low temperature threshold). */
-#define DUTY_CYCLE_LOW                 30  /**< Duty cycle for low fan speed. */
-#define DUTY_CYCLE_MEDIUM              60  /**< Duty cycle for medium fan speed. */
-#define DUTY_CYCLE_HIGH                90  /**< Duty cycle for high fan speed. */
+/* Pin Definitions */
 
-#define BATTERY_LEVEL_THRESHOLD_MEDIUM 50 /**< Battety level medium at 50% of charge */
-#define BATTERY_LEVEL_THRESHOLD_HIGH   80 /**< Battery level high at 80% of charge */
+/**
+ * @brief Port and pin configuration for motor negative terminal
+ */
+#define MOTOR_NEG_PORT GPIOA /**< Port A connected to motor negative terminal */
+#define MOTOR_NEG_PIN  GPIO7 /**< PA7 connected to motor negative terminal */
 
-#define ONE_MINUTE_DELAY               60000 /**< 60000 ms */
-#define DOOR_CLOSING_AND_OPENING_TIME  5000  /**< 5000 ms = 5 seconds */
+/**
+ * @brief Port and pin configuration for motor positive terminal
+ */
+#define MOTOR_POS_PORT GPIOA /**< Port A connected to motor positive terminal */
+#define MOTOR_POS_PIN  GPIO6 /**< PA6 connected to motor positive terminal */
 
-/* Task priorities */
-#define TEMPERATURE_CONTROL_PRIORITY        tskIDLE_PRIORITY + 1
-#define BATTERY_LEVEL_INDICATOR_PRIORITY    tskIDLE_PRIORITY + 1
-#define CLOSE_DOOR_PRIORITY                 tskIDLE_PRIORITY + 2
-#define OPEN_DOOR_PRIORITY                  tskIDLE_PRIORITY + 2
+/**
+ * @brief Port and pin configuration for switch (manual control)
+ */
+#define SWITCH_PORT GPIOA /**< Port A connected to button (switch) */
+#define SWITCH_PIN  GPIO0 /**< PA0 connected to button (switch) */
+
+/**
+ * @brief Port and pin configuration for override control
+ */
+#define OVERRIDE_PORT GPIOA /**< Port A connected to button (override) */
+#define OVERRIDE_PIN  GPIO1 /**< PA1 connected to button (override) */
+
+/**
+ * @brief Port and pin configuration for motion sensor
+ */
+#define MOTION_SENSOR_PORT GPIOA /**< Port A connected to motion sensor */
+#define MOTION_SENSOR_PIN  GPIO2 /**< PA2 connected to motion sensor */
+
+/**
+ * @brief Port and pin configuration for fire sensor
+ */
+#define FIRE_SENSOR_PORT GPIOA /**< Port A connected to fire sensor */
+#define FIRE_SENSOR_PIN  GPIO3 /**< PA3 connected to fire sensor */
+
+/**
+ * @brief Port and pin configuration for alarm
+ */
+#define ALARM_PORT GPIOA /**< Port A connected to alarm */
+#define ALARM_PIN  GPIO8 /**< PA8 connected to alarm */
+
+/**
+ * @brief Port and pin configuration for LED
+ */
+#define LED_PORT GPIOB /**< Port B connected to LED */
+#define LED_PIN  GPIO8 /**< PB8 connected to LED */
+
+/**
+ * @brief Port and pin configuration for fan
+ */
+#define FAN_PORT GPIOB /**< Port B connected to fan */
+#define FAN_PIN  GPIO9 /**< PB9 connected to fan */
+
+/**
+ * @brief Prescaler value for timer
+ */
+#define PRESCALER_VALUE 71
+
+/**
+ * @brief Timer period for the timer
+ */
+#define TIMER_PERIOD 999
 
 /* Task names */
-#define TEMPERATURE_CONTROL_TASK_NAME       "temperature_control"
-#define BATTERY_LEVEL_INDICATOR_TASK_NAME   "battery_level_indicator"
-#define CLOSE_DOOR_TASK_NAME                "close_door"
-#define OPEN_DOOR_TASK_NAME                 "open_door"
 
-static uint32_t duty_cycle = 0; /**< Duty cycle for the PWM signal */
+/**
+ * @brief Task name for temperature control
+ */
+#define TEMPERATURE_CONTROL_TASK_NAME "temperature_control"
+
+/**
+ * @brief Task name for battery control
+ */
+#define BATTERY_LEVEL_INDICATOR_TASK_NAME "battery_control"
+
+/**
+ * @brief Task name for door control to close
+ */
+#define CLOSE_DOOR_TASK_NAME "close_door"
+
+/**
+ * @brief Task name for door control to open
+ */
+#define OPEN_DOOR_TASK_NAME "open_door"
+
+/* Task priorities */
+
+/**
+ * @brief Priority for temperature control task
+ */
+#define TEMPERATURE_CONTROL_PRIORITY tskIDLE_PRIORITY + 2
+
+/**
+ * @brief Priority for battery control task
+ */
+#define BATTERY_CONTROL_PRIORITY tskIDLE_PRIORITY + 1
+
+/**
+ * @brief Priority for door close task
+ */
+#define CLOSE_DOOR_PRIORITY tskIDLE_PRIORITY + 2
+
+/**
+ * @brief Priority for door open task
+ */
+#define OPEN_DOOR_PRIORITY tskIDLE_PRIORITY + 2
+
+/**
+ * @brief Stack size for the temperature control task.
+ *
+ * Defines the total stack size used by the temperature control task, which includes the minimum
+ * stack size plus an additional 100 bytes.
+ */
+#define TEMPERATURE_CONTROL_STACK_SIZE                                                                                 \
+    (configMINIMAL_STACK_SIZE + 100) /**< Stack size for temperature control task                                      \
+                                      */
+
+/**
+ * @brief Stack size for the battery level indicator task.
+ *
+ * Defines the total stack size used by the battery level indicator task, which includes the minimum
+ * stack size plus an additional 100 bytes.
+ */
+#define BATTERY_LEVEL_INDICATOR_STACK_SIZE                                                                             \
+    (configMINIMAL_STACK_SIZE + 100) /**< Stack size for battery level indicator task */
+
+/**
+ * @brief Stack size for the close door task.
+ *
+ * Defines the total stack size used by the close door task, which includes the minimum stack size
+ * plus an additional 100 bytes.
+ */
+#define CLOSE_DOOR_STACK_SIZE (configMINIMAL_STACK_SIZE + 100) /**< Stack size for close door task */
+
+/**
+ * @brief Stack size for the open door task.
+ *
+ * Defines the total stack size used by the open door task, which includes the minimum stack size
+ * plus an additional 100 bytes.
+ */
+#define OPEN_DOOR_STACK_SIZE (configMINIMAL_STACK_SIZE + 100) /**< Stack size for open door task */
+
+/**
+ * @brief ADC clock enable macro for ADC1
+ */
+#define ADC_CLOCK_ENABLE RCC_ADC1 /**< Enable the clock for ADC1 */
+
+/**
+ * @brief ADC disable macro for ADC1
+ */
+#define ADC_DISABLE (~ADC_CR2_ADON) /**< Clear the ADON bit to disable the ADC */
+
+/**
+ * @brief Mask for the sequence length bits in ADC1_SQR1 register
+ */
+#define ADC_SEQ_LENGTH_MASK 0xF /**< Mask for the sequence length bits */
+
+/**
+ * @brief Position of the sequence length bits in ADC1_SQR1 register
+ */
+#define ADC_SEQ_LENGTH_POS 20 /**< Position of the sequence length bits */
+
+/**
+ * @brief Sequence length set to 1 channel in ADC configuration
+ */
+#define ADC_SEQ_LENGTH_1_CHANNEL 0x0 /**< Set the sequence length to 1 channel */
+
+/**
+ * @brief Mask for the sample time bits in ADC1_SMPR2 register
+ */
+#define ADC_SAMPLE_TIME_MASK 0x7 /**< Mask for the sample time bits */
+
+/**
+ * @brief Position of the sample time bits for channel 4 in ADC1_SMPR2 register
+ */
+#define ADC_CHANNEL_4_SAMPLE_POS 12 /**< Position of the sample time bits for channel 4 */
+
+/**
+ * @brief Position of the sample time bits for channel 5 in ADC1_SMPR2 register
+ */
+#define ADC_CHANNEL_5_SAMPLE_POS 15 /**< Position of the sample time bits for channel 5 */
+
+/**
+ * @brief Sample time of 1.5 cycles for ADC channel configuration
+ */
+#define ADC_SAMPLE_TIME_1_5_CYCLES ADC_SMPR_SMP_1DOT5CYC /**< Set sample time to 1.5 cycles */
+
+/**
+ * @brief ADC conversion start macro for regular conversion
+ */
+#define ADC_START_CONVERSION ADC_CR2_SWSTART /**< Set the SWSTART bit to begin conversion */
+
+/**
+ * @brief ADC DMA enable macro to enable DMA for ADC
+ */
+#define ADC_ENABLE_DMA ADC_CR2_DMA /**< Enable DMA mode for ADC */
+
+/**
+ * @brief Define for enabling the ADC (ADC1)
+ */
+#define ADC_ENABLE ADC_CR2_ADON /**< Set the ADON bit to enable ADC1 */
+
+/**
+ * @brief Define for disabling the ADC (ADC1)
+ */
+#define ADC_DISABLE (~ADC_CR2_ADON) /**< Clear the ADON bit to disable ADC1 */
+
+/**
+ * @brief Define for the ADC sequence channel mask in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_MASK 0x1F /**< Mask for the sequence channel bits */
+
+/**
+ * @brief Define for the position of the sequence channel in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_POS 0 /**< Position of the channel in the sequence */
+
+/**
+ * @brief Define for the ADC sequence channel mask in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_MASK 0x1F /**< Mask for the sequence channel bits */
+
+/**
+ * @brief Define for the position of the sequence channel in the ADC1_SQR3 register
+ */
+#define ADC_SEQUENCE_CHANNEL_POS 0 /**< Position of the channel in the sequence */
+
+/**
+ * @brief Define for the ADC channel used to read the battery
+ */
+#define ADC_CHANNEL_BATT 4 /**< ADC channel for reading battery voltage */
+
+/**
+ * @brief Define for the ADC channel used to read the temperature
+ */
+#define ADC_CHANNEL_TEMP 5 /**< ADC channel for reading temperature */
+
+/**
+ * @brief Define for enabling the ADC (ADC1)
+ */
+#define ADC_ENABLE ADC_CR2_ADON /**< Set the ADON bit to enable ADC1 */
+
+/**
+ * @brief Define for disabling the ADC (ADC1)
+ */
+#define ADC_DISABLE (~ADC_CR2_ADON) /**< Clear the ADON bit to disable ADC1 */
+
+/**
+ * @brief GPIO port used for USART1 TX.
+ */
+#define USART_TX_PORT GPIOA /**< Port A connected to USART1 TX */
+
+/**
+ * @brief GPIO pin used for USART1 TX.
+ */
+#define USART_TX_PIN GPIO_USART1_TX /**< PA9 connected to USART1 TX */
+
+/**
+ * @brief GPIO port used for USART1 RX.
+ */
+#define USART_RX_PORT GPIOA /**< Port A connected to USART1 RX */
+
+/**
+ * @brief GPIO pin used for USART1 RX.
+ */
+#define USART_RX_PIN GPIO_USART1_RX /**< PA10 connected to USART1 RX */
+
+/**
+ * @brief Baud rate for UART communication.
+ */
+#define UART_BAUD_RATE 9600 /**< UART baud rate */
+
+/**
+ * @brief Number of data bits in UART communication.
+ */
+#define UART_DATA_BITS 8 /**< UART data bits */
+
+/* -------------------------------- Function prototypes ------------------------------------------- */
 
 /**
  * @brief Initializes the system clock to 72 MHz using an 8 MHz external crystal.
  */
 void system_clock_setup(void);
 
-  
 /**
- * @brief Configures the GPIO pins for the alarm, motor, manual switch, override switch, LED, fan, and sensors
- * 
- * The alarm pin is configured as an output, the motor pin is configured as an output in pin 6, port A,
- * the manual switch pin is configured as an input in pin 7 port A, the override switch pin is configured
- * as an input in pin 8 port A, the LED pin is configured as an output in pin 10 port A, the fan pin is configured
- * as an output in pin 9 port A, the temperature sensor pin is configured as an input in pin 0 port A, the battery
- * level pin is configured as an input in pin 1 port A, the motion sensor pin is configured as an input in pin 2 port A,
- * and the infrared sensor pin is configured as an input in pin 3 port A.
- * 
+ * @brief Configures GPIO pins for motor control, sensors, alarms, and other components.
+ *
+ * This function configures the following GPIO pins:
+ * - Motor negative and positive control pins (MOTOR_NEG_PIN and MOTOR_POS_PIN)
+ * - Onboard LED and fan control pins (LED_PIN and FAN_PIN)
+ * - Alarm control pin (ALARM_PIN)
+ * - Motion and fire sensor input pins (MOTION_SENSOR_PIN and FIRE_SENSOR_PIN)
+ * - Button (switch) and override button input pins (SWITCH_PIN and OVERRIDE_PIN)
+ *
+ * It also enables the necessary peripheral clocks for GPIOA, GPIOB, and GPIOC.
+ * The pins are configured as input or output with appropriate settings (push-pull or pull-up/down).
  */
-void configure_gpio(void);
+void gpio_setup(void);
 
 /**
- * @brief Configures the EXTI interrupt for the override switch
- * 
- * The AFIO clock is enabled, the EXTI9_5 interrupt is enabled in the NVIC, EXTI8 is configured as the source
- * for the override switch pin, the interrupt is triggered on the falling edge, and the EXTI8 interrupt is enabled.
- * 
- * Note: The EXTI9_5 manages EXTI5 to EXTI9 interrupts.
+ * @brief Configures and enables external interrupts (EXTI) for multiple GPIO pins.
+ *
+ * This function sets up the AFIO clock, enables the necessary NVIC interrupts,
+ * and configures EXTI lines 0 to 3 for specific GPIO ports and trigger conditions.
+ *
+ * - EXTI0 (PA0) is linked to the `SWITCH_PORT` and configured for both edge triggers.
+ * - EXTI1 (PA1) is linked to the `OVERRIDE_PORT` and configured for both edge triggers.
+ * - EXTI2 (PA2) is linked to the `MOTION_SENSOR_PORT` and configured for both edge triggers.
+ * - EXTI3 (PA3) is linked to the `FIRE_SENSOR_PORT` and configured for both edge triggers.
  */
 void exti_setup(void);
 
- /** @brief Configures the I2C1 peripheral on the STM32.
+/**
+ * @brief Configures ADC1 for single-channel operation with specific sample times and DMA support.
  *
- * This function sets up the I2C1 peripheral on the STM32 microcontroller to operate
- * in standard mode (100 kHz) with GPIO pins configured for open-drain alternate function.
- * It enables the clocks for GPIOB and I2C1, configures the necessary pins for I2C communication,
- * sets the I2C clock frequency, rise time, and CCR value for a 100 kHz bus speed.
+ * This function sets up the ADC1 peripheral for single-channel conversions, specifies sample times
+ * for channels 4 and 5, and enables DMA for efficient data transfer.
  *
- * @note Assumes a system clock frequency of 36 MHz for proper timing configuration.
- *       Adjustments may be necessary for different clock speeds.
- *
- * GPIOB is used for I2C1_SCL and I2C1_SDA lines with open-drain configuration.
- * Before enabling the I2C peripheral, it is disabled to ensure a clean configuration.
+ * Steps performed:
+ * - Enables the clock for ADC1.
+ * - Disables ADC1 to allow configuration.
+ * - Sets the regular sequence length to 1 (single channel).
+ * - Configures the sample times for channels 4 and 5 to 1.5 cycles.
+ * - Starts the regular conversion process.
+ * - Enables DMA mode for the ADC.
  */
-void config_i2c(void);
+void configure_adc(void);
 
 /**
- * @brief Configures the timer to generate a PWM signal
- * 
- * The timer is configured to generate a PWM signal with a period of 10 ms and a duty cycle of 0%.
- * 
+ * @brief Configures USART1 with specified settings.
+ *
+ * This function sets up USART1 with a baud rate of 9600, 8 data bits,
+ * 1 stop bit, and no parity. It also enables GPIOA for USART TX and RX,
+ * configures the pins for alternate function push-pull, and enables
+ * DMA for TX.
+ *
+ * @details
+ * - Enables the peripheral clocks for USART1 and GPIOA.
+ * - Configures GPIOA pins PA9 and PA10 for TX and RX respectively.
+ * - Sets up USART1 with the specified parameters and enables the peripheral.
+ */
+void configure_usart(void);
+
+/**
+ * @brief Configures TIM4 to generate PWM signals.
+ *
+ * This function sets up TIM4 for PWM generation on channels 3 and 4:
+ * - **Frequency**: Configured to 20 kHz.
+ * - **Mode**: Center-aligned mode with counting direction up.
+ * - **Channels**:
+ *   - Channel 3 and 4 are set to PWM mode 2.
+ * - **Output**: Enables high polarity output for both channels.
+ * - **Break Functionality**: Enables main output break for safety.
  */
 void config_pwm(void);
-
-/** @brief Set up the ADC with the required configuration.
- *
- * The ADC is used to convert analog signals from various sensors (temperature, 
- * battery level, motion, and infrared sensor) into digital values that can be 
- * processed by the microcontroller. This allows the system to monitor sensor 
- * readings and make decisions such as closing the door, activating alarms, or 
- * indicating battery levels.
- */
-void adc_setup(void);

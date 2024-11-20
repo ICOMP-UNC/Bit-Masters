@@ -1,9 +1,14 @@
 /**
  * @file configuration.c
- * @brief Configuration source file
+ * @brief System initialization and configuration functions.
+ *
+ * This file contains functions to initialize and configure various system
+ * components including system clock, GPIO, ADC, USART, PWM, and external interrupts.
+ * These functions set up the peripherals, configure their modes, and enable the
+ * necessary clocks and DMA for their operation.
  */
 
-#include "configuration.h" /**< Include the configuration header file */
+#include "configuration.h"
 
 void system_clock_setup(void)
 {
@@ -11,191 +16,177 @@ void system_clock_setup(void)
     rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
 }
 
-void configure_gpio(void) {
-    /* Configure the alarm pin as output */
-    gpio_set_mode(ALARM_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_PUSHPULL, ALARM_PIN);
-    
-    /* Configure the positive motor pin as output */
-    gpio_set_mode(MOTOR_POS_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_POS_PIN);
+void gpio_setup(void)
+{
+    /* Enable GPIO clocks */
+    rcc_periph_clock_enable(RCC_GPIOC); /**< Enable GPIOC peripheral clock */
+    rcc_periph_clock_enable(RCC_GPIOA); /**< Enable GPIOA peripheral clock */
+    rcc_periph_clock_enable(RCC_GPIOB); /**< Enable GPIOB peripheral clock */
 
-    /* Configure the negative motor pin as output */
-    gpio_set_mode(MOTOR_NEG_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_PUSHPULL, MOTOR_NEG_PIN);
+    /* Configure GPIO pins for motor control */
+    gpio_set_mode(MOTOR_NEG_PORT,
+                  GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_PUSHPULL,
+                  MOTOR_NEG_PIN); /**< Set MOTOR_NEG_PIN as output with push-pull configuration */
+    gpio_set_mode(MOTOR_POS_PORT,
+                  GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_PUSHPULL,
+                  MOTOR_POS_PIN); /**< Set MOTOR_POS_PIN as output with push-pull configuration */
 
-    /* Configure the manual switch pin as input */
-    gpio_set_mode(MANUAL_SWITCH_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_PULL_UPDOWN, MANUAL_SWITCH_PIN);
+    /* Configure GPIO pins for LED and Fan */
+    gpio_set_mode(LED_PORT,
+                  GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
+                  LED_PIN); /**< Set LED_PIN as output with alternate function push-pull configuration */
+    gpio_set_mode(FAN_PORT,
+                  GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
+                  FAN_PIN); /**< Set FAN_PIN as output with alternate function push-pull configuration */
 
-    /* Configure the override switch pin as input */
-    gpio_set_mode(OVERRIDE_SWITCH_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_PULL_UPDOWN, OVERRIDE_SWITCH_PIN);
+    /* Configure GPIO pin for Alarm */
+    gpio_set_mode(ALARM_PORT,
+                  GPIO_MODE_OUTPUT_2_MHZ,
+                  GPIO_CNF_OUTPUT_PUSHPULL,
+                  ALARM_PIN); /**< Set ALARM_PIN as output with push-pull configuration */
 
-    /* Configure the LED pin as output */
-    gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, LED_PIN);
+    /* Configure GPIO pins for motion and fire sensors */
+    gpio_set_mode(MOTION_SENSOR_PORT,
+                  GPIO_MODE_INPUT,
+                  GPIO_CNF_INPUT_PULL_UPDOWN,
+                  MOTION_SENSOR_PIN); /**< Set MOTION_SENSOR_PIN as input with pull-up/down configuration */
+    gpio_set_mode(FIRE_SENSOR_PORT,
+                  GPIO_MODE_INPUT,
+                  GPIO_CNF_INPUT_PULL_UPDOWN,
+                  FIRE_SENSOR_PIN); /**< Set FIRE_SENSOR_PIN as input with pull-up/down configuration */
 
-    /* Configure the fan pin as output */
-    gpio_set_mode(FAN_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-                  GPIO_CNF_OUTPUT_PUSHPULL, FAN_PIN);
+    /* Configure PA0 as input for switch with pull-up/down configuration */
+    gpio_set_mode(SWITCH_PORT,
+                  GPIO_MODE_INPUT,
+                  GPIO_CNF_INPUT_PULL_UPDOWN,
+                  SWITCH_PIN); /**< Set SWITCH_PIN as input with pull-up/down configuration */
 
-    /* Configure the temperature sensor pin as input */
-    gpio_set_mode(TEMP_SENSOR_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_ANALOG, TEMP_SENSOR_PIN);
-
-    /* Configure the battery level pin as input */
-    gpio_set_mode(BATTERY_LEVEL_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_ANALOG, BATTERY_LEVEL_PIN);
-
-    /* Configure the motion sensor pin as input */
-    gpio_set_mode(MOTION_SENSOR_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_FLOAT, MOTION_SENSOR_PIN);
-
-    /* Configure the infrared sensor pin as input */
-    gpio_set_mode(INFRARED_SENSOR_PORT, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_FLOAT, INFRARED_SENSOR_PIN);
-
-    // Enable clock for every port
-    rcc_periph_clock_enable(ALARM_PORT);
-    rcc_periph_clock_enable(MOTOR_POS_PORT);
-    rcc_periph_clock_enable(MOTOR_NEG_PORT);
-    rcc_periph_clock_enable(MANUAL_SWITCH_PORT);
-    rcc_periph_clock_enable(OVERRIDE_SWITCH_PORT);
-    rcc_periph_clock_enable(LED_PORT);
-    rcc_periph_clock_enable(FAN_PORT);
-    rcc_periph_clock_enable(TEMP_SENSOR_PORT);
-    rcc_periph_clock_enable(BATTERY_LEVEL_PORT);
-    rcc_periph_clock_enable(MOTION_SENSOR_PORT);
-    rcc_periph_clock_enable(INFRARED_SENSOR_PORT);
+    /* Configure PA1 as input for override button with pull-up/down configuration */
+    gpio_set_mode(OVERRIDE_PORT,
+                  GPIO_MODE_INPUT,
+                  GPIO_CNF_INPUT_PULL_UPDOWN,
+                  OVERRIDE_PIN); /**< Set OVERRIDE_PIN as input with pull-up/down configuration */
 }
 
 void exti_setup(void)
 {
-    /* Enable AFIO clock */
+    /* Enable AFIO clock (for EXTI configuration) */
     rcc_periph_clock_enable(RCC_AFIO);
 
-    /* Enable EXT8 interrupt in the NVIC */
-    nvic_enable_irq(NVIC_EXTI9_5_IRQ);
+    /* Configure EXTI0 (PA0) for both falling and rising edges */
+    exti_select_source(EXTI0, SWITCH_PORT);     /* Set PA0 as the EXTI0 source */
+    exti_set_trigger(EXTI0, EXTI_TRIGGER_BOTH); /* Trigger interrupt on falling and rising edge */
+    exti_enable_request(EXTI0);                 /* Enable EXTI0 interrupt */
 
-    nvic_enable_irq(NVIC_EXTI15_10_IRQ);
+    /* Configure EXTI1 (PA1) for both falling and rising edges */
+    exti_select_source(EXTI1, OVERRIDE_PORT);   /* Set PA1 as the EXTI1 source */
+    exti_set_trigger(EXTI1, EXTI_TRIGGER_BOTH); /* Trigger interrupt on falling and rising edge */
+    exti_enable_request(EXTI1);                 /* Enable EXTI1 interrupt */
 
-    /* Configure EXTI0 (PA8) for falling edge initially */
-    exti_select_source(EXTI8, OVERRIDE_SWITCH_PIN); /* Set PA8 as the EXTI8 source */
-    exti_set_trigger(EXTI8, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on rising edge and falling edge*/
-    exti_enable_request(EXTI8);                     /* Enable EXTI8 interrupt */
+    /* Configure EXTI2 (PA2) for both falling and rising edges */
+    exti_select_source(EXTI2, MOTION_SENSOR_PORT); /* Set PA2 as the EXTI2 source */
+    exti_set_trigger(EXTI2, EXTI_TRIGGER_BOTH);    /* Trigger interrupt on falling and rising edge */
+    exti_enable_request(EXTI2);                    /* Enable EXTI2 interrupt */
 
-    exti_select_source(EXTI9, MANUAL_SWITCH_PIN); /* Set PA9 as the EXTI9 source */
-    exti_set_trigger(EXTI9, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge and rising edge*/
-    exti_enable_request(EXTI9);                     /* Enable EXTI9 interrupt */
+    /* Configure EXTI3 (PA3) for both falling and rising edges */
+    exti_select_source(EXTI3, FIRE_SENSOR_PORT); /* Set PA3 as the EXTI3 source */
+    exti_set_trigger(EXTI3, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on rising and falling edge */
+    exti_enable_request(EXTI3);                  /* Enable EXTI3 interrupt */
 
-    exti_select_source(EXTI10, MOTION_SENSOR_PIN); /* Set PA10 as the EXTI10 source */
-    exti_set_trigger(EXTI10, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
-    exti_enable_request(EXTI10);                     /* Enable EXTI10 interrupt */
-
-    exti_select_source(EXTI11, INFRARED_SENSOR_PIN); /* Set PA11 as the EXTI11 source */
-    exti_set_trigger(EXTI11, EXTI_TRIGGER_BOTH);  /* Trigger interrupt on falling edge */
-    exti_enable_request(EXTI11);                     /* Enable EXTI11 interrupt */
+    /* Enable EXTI0 interrupt in the NVIC */
+    nvic_enable_irq(NVIC_EXTI0_IRQ);
+    nvic_enable_irq(NVIC_EXTI1_IRQ);
+    nvic_enable_irq(NVIC_EXTI2_IRQ);
+    nvic_enable_irq(NVIC_EXTI3_IRQ);
 }
 
-void config_i2c(void)
+void configure_adc(void)
 {
-    // Enable clock for GPIOB and I2C1
-    rcc_periph_clock_enable(RCC_GPIOB);
-    rcc_periph_clock_enable(RCC_I2C1);
+    /* Enable clock for ADC1 */
+    rcc_periph_clock_enable(ADC_CLOCK_ENABLE);
 
-    // GPIO pins configuration for SDA and SCL 
-    gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,
-              GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
-              GPIO_I2C1_SCL | GPIO_I2C1_SDA);
+    /* Turn off the ADC before configuring it */
+    ADC1_CR2 &= ADC_DISABLE;
 
-    // Disable I2C1 before configurating it
-    i2c_peripheral_disable(I2C1);
+    /* Configure the regular sequence length to 1 (single channel) */
+    ADC1_SQR1 &= ~(ADC_SEQ_LENGTH_MASK << ADC_SEQ_LENGTH_POS);     /* Clear sequence length bits */
+    ADC1_SQR1 |= (ADC_SEQ_LENGTH_1_CHANNEL << ADC_SEQ_LENGTH_POS); /* Set sequence length to 1 channel */
 
-    // I2C basic configuration
-    i2c_set_clock_frequency(I2C1, I2C_CR2_FREQ_36MHZ);
-    i2c_set_standard_mode(I2C1);
-    i2c_set_trise(I2C1, I2C1_TRISE_100KHZ); // Rising time in standard mode
-    i2c_set_ccr(I2C1, I2C1_CCR_100KHZ);  // Set the CCR to 100 kHz
+    /* Configure the sample time for channel 4 */
+    ADC1_SMPR2 &= ~(ADC_SAMPLE_TIME_MASK << ADC_CHANNEL_4_SAMPLE_POS); /* Clear sample time bits for channel 4 */
+    ADC1_SMPR2 |=
+        (ADC_SAMPLE_TIME_1_5_CYCLES << ADC_CHANNEL_4_SAMPLE_POS); /* Set sample time to 1.5 cycles for channel 4 */
 
-    // Enable I2C to start communication
-    i2c_peripheral_enable(I2C1);
+    /* Configure the sample time for channel 5 */
+    ADC1_SMPR2 &= ~(ADC_SAMPLE_TIME_MASK << ADC_CHANNEL_5_SAMPLE_POS); /* Clear sample time bits for channel 5 */
+    ADC1_SMPR2 |=
+        (ADC_SAMPLE_TIME_1_5_CYCLES << ADC_CHANNEL_5_SAMPLE_POS); /* Set sample time to 1.5 cycles for channel 5 */
 
-    // Enable clock for and I2C2
-    rcc_periph_clock_enable(RCC_I2C2);
+    /* Start the regular conversion */
+    ADC1_CR2 |= ADC_START_CONVERSION;
 
-    // GPIO pins configuration for SDA and SCL 
-    gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,
-              GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
-              GPIO_I2C2_SCL | GPIO_I2C2_SDA);
-
-    // Disable I2C1 before configurating it
-    i2c_peripheral_disable(I2C2);
-
-    // I2C basic configuration
-    i2c_set_clock_frequency(I2C2, I2C_CR2_FREQ_36MHZ);
-    i2c_set_standard_mode(I2C2);
-    i2c_set_trise(I2C2, I2C1_TRISE_100KHZ); // Rising time in standard mode
-    i2c_set_ccr(I2C2, I2C1_CCR_100KHZ);  // Set the CCR to 100 kHz
-
-    // Enable I2C to start communication
-    i2c_peripheral_enable(I2C2);
+    /* Enable DMA mode for ADC */
+    ADC1_CR2 |= ADC_ENABLE_DMA;
 }
 
-void config_pwm(void) 
+void configure_usart(void)
+{
+    rcc_periph_clock_enable(RCC_USART1); /* Enable USART1 clock */
+    rcc_periph_clock_enable(RCC_GPIOA);  /* Enable GPIOA clock for USART */
+
+    gpio_set_mode(
+        USART_TX_PORT, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, USART_TX_PIN); /* Configure TX pin */
+    gpio_set_mode(
+        USART_RX_PORT, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, USART_RX_PIN); /* Configure RX pin as floating input */
+
+    usart_set_baudrate(USART1, UART_BAUD_RATE);             /* Set USART1 baud rate */
+    usart_set_databits(USART1, UART_DATA_BITS);             /* Set USART1 data bits */
+    usart_set_stopbits(USART1, USART_STOPBITS_1);           /* Set USART1 stop bits */
+    usart_set_mode(USART1, USART_MODE_TX);                  /* Set USART1 mode to transmit only */
+    usart_set_parity(USART1, USART_PARITY_NONE);            /* Set USART1 parity to none */
+    usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE); /* Disable USART1 flow control */
+
+    usart_enable_tx_dma(USART1); /* Enable USART1 TX DMA */
+
+    usart_enable(USART1); /* Enable USART1 peripheral */
+}
+
+void config_pwm(void)
 {
     /* Enable the peripheral clock of GPIOA */
-    rcc_periph_clock_enable(RCC_TIM1);
+    rcc_periph_clock_enable(RCC_TIM4);
 
     /* Configure the reset and enable the timer peripheral */
-    rcc_periph_reset_pulse(RST_TIM1);
+    rcc_periph_reset_pulse(RST_TIM4);
+
+    timer_set_mode(TIM4, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_CENTER_1, TIM_CR1_DIR_UP);
 
     /* Configure the temporizer to obtain a frequency of 20 kHz */
-    timer_set_prescaler(TIM1, PRESCALER_VALUE); 
+    timer_set_prescaler(TIM4, PRESCALER_VALUE);
 
     /* Configure the temporizer to count up to 999 */
-    timer_set_period(TIM1, TIMER_PERIOD);
+    timer_set_period(TIM4, TIMER_PERIOD);
 
-    /* Enable the output channel 2 as PWM */
-    timer_set_oc_mode(TIM1, TIM_OC2, TIM_OCM_PWM1);
+    /* Enable the output channel 1 as PWM */
+    timer_set_oc_mode(TIM4, TIM_OC3, TIM_OCM_PWM2);
 
-    /* Set the duty cicle at 0% */
-    timer_set_oc_value(TIM1, TIM_OC2, duty_cycle); 
+    timer_set_oc_mode(TIM4, TIM_OC4, TIM_OCM_PWM2);
 
-    /* Set the output polarity for OC2 as high */
-    timer_set_oc_polarity_high(TIM1, TIM_OC2);
+    /* Set the output polarity as high */
+    timer_set_oc_polarity_high(TIM4, TIM_OC1);
 
     /* Enable the output for OC2 */
-    timer_enable_oc_output(TIM1, TIM_OC2);
+    timer_enable_oc_output(TIM4, TIM_OC3);
 
-    /* Enable the output channel 3 as PWM */
-    timer_set_oc_mode(TIM1, TIM_OC3, TIM_OCM_PWM1);
-
-    /* Set the duty cicle at 0% */
-    timer_set_oc_value(TIM1, TIM_OC3, duty_cycle); 
-
-    /* Set the output polarity for OC3 as high */
-    timer_set_oc_polarity_high(TIM1, TIM_OC3);
-
-    /* Enable the output for OC3 */
-    timer_enable_oc_output(TIM1, TIM_OC3);
+    timer_enable_oc_output(TIM4, TIM_OC4);
 
     /* Enable the break function */
-    timer_enable_break_main_output(TIM1);
+    timer_enable_break_main_output(TIM4);
 
     /* Enable the temporizer */
-    timer_enable_counter(TIM1);
-}
-  
-void adc_setup(void) {
-      /* Configure ADC */
-    adc_power_off(ADC1);                     // Power off the ADC for configuration
-    adc_disable_scan_mode(ADC1);             // Single conversion mode (one channel at a time)
-    adc_disable_external_trigger_regular(ADC1);
-    adc_set_single_conversion_mode(ADC1);    // Single conversion per channel
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_55DOT5CYC); /*  Sampling time */
-    /* Calibrate ADC */
-    adc_power_on(ADC1);                      // Power on the ADC
-    adc_reset_calibration(ADC1);
-    adc_calibrate(ADC1);
+    timer_enable_counter(TIM4);
 }

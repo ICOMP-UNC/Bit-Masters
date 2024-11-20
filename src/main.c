@@ -36,7 +36,7 @@
 /**
  * @brief Door state OPEN
  */
-#define OPEN   0
+#define OPEN 0
 
 /**
  * @brief ADC disable macro for ADC1

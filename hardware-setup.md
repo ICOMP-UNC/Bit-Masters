@@ -1,4 +1,4 @@
-### **Component Connections**
+## **Component Connections**
 
 1. **Motor Negative Terminal (PA7)**:
    - Connect the motor’s negative terminal to pin **PA7** on the STM32 board.
@@ -37,9 +37,8 @@
     - Connect pin **PA9 (TX)** to a device that receives data (such as a UART terminal or another microcontroller).
     - Connect pin **PA10 (RX)** to a device that sends data (such as a UART terminal or microcontroller).
 
----
 
-### **Summary of Connections**
+## **Summary of Connections**
 
 - **PA7** → Motor negative terminal
 - **PA6** → Motor positive terminal

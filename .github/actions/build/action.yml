@@ -1,0 +1,16 @@
+name: "Build PlatformIO Project"
+description: "Build the PlatformIO project"
+
+inputs:
+  path:
+    required: false
+    description: "Path to the PlatformIO project"
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Build with PlatformIO"
+      shell: bash
+      run: |
+        pio run -d ${{ inputs.path }}
